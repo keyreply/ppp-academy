@@ -8,6 +8,7 @@ import {
     SparklesIcon
 } from '@heroicons/react/24/outline';
 import { ZoomLink } from './ZoomLink';
+import VoiceMessage from './VoiceMessage';
 
 export function ChatArea({
     scenario,
@@ -29,26 +30,7 @@ export function ChatArea({
         }
     }, [messagesToShow, isTyping]);
 
-    const renderVoiceMessage = (voiceContent) => (
-        <div className="bg-gradient-to-br from-[#667eea] to-[#764ba2] p-4 rounded-xl text-white mt-2">
-            <div className="flex items-center gap-2.5 mb-3">
-                <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
-                    <MicrophoneIcon className="w-5 h-5" />
-                </div>
-                <div>
-                    <h4 className="text-[13px] font-semibold mb-0.5">{voiceContent.title}</h4>
-                    <p className="text-[11px] opacity-90">{voiceContent.duration}</p>
-                </div>
-            </div>
-            <div className="text-[13px] leading-relaxed opacity-95 mb-3">
-                "{voiceContent.transcript}"
-            </div>
-            <button className="inline-flex items-center gap-1.5 py-2 px-4 bg-white/20 border-none rounded-md text-white text-[13px] font-medium cursor-pointer transition-all duration-200 hover:bg-white/30">
-                <PlayIcon className="w-4 h-4" />
-                Play Voice Message
-            </button>
-        </div>
-    );
+
 
     const renderMessageContent = (content) => {
         // Check if content contains [Link]
@@ -138,7 +120,7 @@ export function ChatArea({
                                             'bg-amber-50 border border-amber-200 text-amber-800 text-[13px]'}`}
                                 >
                                     {renderMessageContent(message.content)}
-                                    {message.hasVoice && renderVoiceMessage(message.voiceContent)}
+                                    {message.hasVoice && <VoiceMessage {...message.voiceContent} />}
                                 </div>
                                 <div className="text-[11px] text-slate-400 px-1">
                                     {message.timestamp || message.time}

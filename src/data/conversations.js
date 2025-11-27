@@ -460,12 +460,13 @@ export const allConversationData = [
             {
                 trigger: "I'll think about it",
                 type: "kira",
-                content: "Listen to this quickly 🎙️",
+                content: "",
                 time: "11:46 AM",
                 hasVoice: true,
                 voiceContent: {
                     title: "Personal Message from Chris",
                     duration: "45 seconds",
+                    audioSrc: "/Chris.mp3",
                     transcript: "Alex... thinking often looks like stalling. And stalling in business doesn't mean you're being cautious — it means the market is moving while you're standing still. December isn't a month to 'think about it' — it's your launchpad. This clinic isn't about learning more theory. It's about calibrating your trajectory for 2026 before everyone else wakes up in January scrambling. You in?"
                 },
                 options: [
@@ -544,7 +545,7 @@ export const allConversationData = [
             { type: "kira", content: "Hey Alex! The Final Sprint Momentum Clinic is happening this week. We've saved a spot for you — are you in a position to join us?", time: "11:40 AM" },
             { type: "user", content: "I'll think about it.", time: "11:45 AM" },
             { type: "system", content: "🎙️ Hesitation detected. Triggering Voice AI breakthrough protocol via ElevenLabs...", time: "11:46 AM" },
-            { type: "kira", content: "Listen to this quickly 🎙️", time: "11:46 AM", hasVoice: true, voiceContent: { title: "Personal Message from Chris", duration: "45 seconds", transcript: "Alex... thinking often looks like stalling. And stalling in business doesn't mean you're being cautious — it means the market is moving while you're standing still. December isn't a month to 'think about it' — it's your launchpad. This clinic isn't about learning more theory. It's about calibrating your trajectory for 2026 before everyone else wakes up in January scrambling. You in?" } },
+            { type: "kira", content: "", time: "11:46 AM", hasVoice: true, voiceContent: { title: "Personal Message from Chris", duration: "45 seconds", audioSrc: "/Chris.mp3", transcript: "Alex... thinking often looks like stalling. And stalling in business doesn't mean you're being cautious — it means the market is moving while you're standing still. December isn't a month to 'think about it' — it's your launchpad. This clinic isn't about learning more theory. It's about calibrating your trajectory for 2026 before everyone else wakes up in January scrambling. You in?" } },
             { type: "user", content: "Okay, send the link.", time: "11:50 AM" },
             { type: "kira", content: "Perfect. Here's your direct access: [Link]. Let's get you clear!", time: "11:50 AM" },
             { type: "system", content: "✓ Voice breakthrough successful! User tagged: Voice_Converted. Registration confirmed.", time: "11:50 AM" }
