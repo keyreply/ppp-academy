@@ -1,0 +1,7 @@
+# Environment Variables Template
+# Copy this file to .dev.vars for local development
+# Add your actual values in .dev.vars (which is gitignored)
+
+# Example:
+# API_KEY=your-api-key-here
+# API_URL=https://api.example.com
