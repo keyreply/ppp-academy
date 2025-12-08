@@ -375,22 +375,30 @@ export default function CreateTask({ onClose, onSave }) {
     const renderStep3 = () => (
         <div className="space-y-6">
             <div>
-                <h2 className="text-xl font-bold text-slate-900 mb-2">03 Compliance & Audit</h2>
-                <p className="text-sm text-slate-600">Configure compliance rules and audit settings</p>
+                <h2 className="text-xl font-bold text-slate-900 mb-2">03 Anti-Harassment Rules</h2>
+                <p className="text-sm text-slate-600">Set up anti-harassment and compliance policies</p>
             </div>
 
-            {/* Anti-harassment */}
-            <div className="flex items-start gap-3">
-                <input
-                    type="checkbox"
-                    checked={formData.antiHarassment}
-                    onChange={(e) => updateFormData('antiHarassment', e.target.checked)}
-                    className="mt-1 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
+            {/* Anti-harassment with Toggle */}
+            <div className="flex items-start justify-between">
                 <div className="flex-1">
-                    <label className="text-sm font-medium text-slate-900">Anti-harassment <span className="text-red-500">*</span></label>
-                    <p className="text-xs text-slate-500 mt-1">When enabled, same user will only receive 1 call within 24 hours</p>
+                    <label className="text-sm font-medium text-slate-900">
+                        Anti-harassment <span className="text-red-500">*</span>
+                    </label>
+                    <p className="text-xs text-slate-500 mt-1">
+                        Mandatory compliance: Same user can only be called once within 24 hours
+                    </p>
                 </div>
+                <button
+                    onClick={() => updateFormData('antiHarassment', !formData.antiHarassment)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.antiHarassment ? 'bg-slate-900' : 'bg-slate-300'
+                        }`}
+                >
+                    <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.antiHarassment ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                    />
+                </button>
             </div>
 
             {/* Cross-channel Frequency Limit */}
@@ -402,193 +410,65 @@ export default function CreateTask({ onClose, onSave }) {
                     type="number"
                     value={formData.crossChannelLimit}
                     onChange={(e) => updateFormData('crossChannelLimit', e.target.value)}
-                    placeholder="e.g., 3"
+                    placeholder="3"
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <p className="text-xs text-slate-500 mt-1">Phone + SMS + Email ≤ X times / 24 hours</p>
+                <p className="text-xs text-slate-500 mt-1">
+                    Total of phone + SMS + email ≤ X times/24h
+                </p>
             </div>
 
             {/* Cooling Period */}
             <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Cooling Period (days)
+                    Cooling Period
                 </label>
                 <input
                     type="number"
                     value={formData.coolingPeriod}
                     onChange={(e) => updateFormData('coolingPeriod', e.target.value)}
-                    placeholder="e.g., 7"
+                    placeholder="7"
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <p className="text-xs text-slate-500 mt-1">No contact for X days after user rejection</p>
+                <p className="text-xs text-slate-500 mt-1">
+                    After user explicitly refuses, do not contact again for X days
+                </p>
             </div>
 
-            {/* Retry Rules */}
-            <div className="border-t border-slate-200 pt-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">Retry Rules</h3>
-
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Retry Count <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                        type="number"
-                        value={formData.retryCount}
-                        onChange={(e) => updateFormData('retryCount', e.target.value)}
-                        min="1"
-                        max="10"
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">Maximum retry attempts after failure (1-10)</p>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Retry Interval
-                    </label>
-                    <div className="flex gap-2">
-                        <input
-                            type="number"
-                            value={formData.retryInterval}
-                            onChange={(e) => updateFormData('retryInterval', e.target.value)}
-                            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <select
-                            value={formData.retryIntervalUnit}
-                            onChange={(e) => updateFormData('retryIntervalUnit', e.target.value)}
-                            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option>Minutes</option>
-                            <option>Hours</option>
-                            <option>Days</option>
-                        </select>
-                    </div>
-                </div>
+            {/* Max Consecutive Failures */}
+            <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Max Consecutive Failures
+                </label>
+                <input
+                    type="number"
+                    value={formData.maxConsecutiveFailures}
+                    onChange={(e) => updateFormData('maxConsecutiveFailures', e.target.value)}
+                    placeholder="3"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                    After X consecutive failures → auto transfer to human or pause
+                </p>
             </div>
 
-            {/* Compliance Checks */}
-            <div className="border-t border-slate-200 pt-6 space-y-3">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">Compliance Checks</h3>
-
-                <div className="flex items-start gap-3">
-                    <input
-                        type="checkbox"
-                        checked={formData.forceExitScript}
-                        onChange={(e) => updateFormData('forceExitScript', e.target.checked)}
-                        className="mt-1 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div className="flex-1">
-                        <label className="text-sm font-medium text-slate-900">Force Exit Script <span className="text-red-500">*</span></label>
-                        <p className="text-xs text-slate-500 mt-1">Must include "Reply 'STOP' to unsubscribe"</p>
-                    </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                    <input
-                        type="checkbox"
-                        checked={formData.sensitiveWordFilter}
-                        onChange={(e) => updateFormData('sensitiveWordFilter', e.target.checked)}
-                        className="mt-1 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div className="flex-1">
-                        <label className="text-sm font-medium text-slate-900">Sensitive Word Filter <span className="text-red-500">*</span></label>
-                        <p className="text-xs text-slate-500 mt-1">Auto-detect and block violating scripts like "100% cure"</p>
-                    </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                    <input
-                        type="checkbox"
-                        checked={formData.multiLanguageCompliance}
-                        onChange={(e) => updateFormData('multiLanguageCompliance', e.target.checked)}
-                        className="mt-1 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div className="flex-1">
-                        <label className="text-sm font-medium text-slate-900">Multi-language Compliance Check <span className="text-red-500">*</span></label>
-                        <p className="text-xs text-slate-500 mt-1">Ensure language matches target user</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Auditor Information */}
-            <div className="border-t border-slate-200 pt-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">Auditor Information</h3>
-
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Auditor Name
-                    </label>
-                    <input
-                        type="text"
-                        value={formData.auditorName}
-                        onChange={(e) => updateFormData('auditorName', e.target.value)}
-                        placeholder="Enter auditor name"
-                        maxLength={20}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Auditor Email
-                    </label>
-                    <input
-                        type="email"
-                        value={formData.auditorEmail}
-                        onChange={(e) => updateFormData('auditorEmail', e.target.value)}
-                        placeholder="Enter auditor email"
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">High-risk tasks must specify auditor email</p>
-                </div>
-            </div>
-
-            {/* Advanced Settings */}
-            <div className="border-t border-slate-200 pt-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">Advanced Settings</h3>
-
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Max Consecutive Failures
-                    </label>
-                    <input
-                        type="number"
-                        value={formData.maxConsecutiveFailures}
-                        onChange={(e) => updateFormData('maxConsecutiveFailures', e.target.value)}
-                        placeholder="e.g., 5"
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">Auto transfer to manual or pause after X consecutive failures</p>
-                </div>
-
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Fallback Channel
-                    </label>
-                    <select
-                        value={formData.fallbackChannel}
-                        onChange={(e) => updateFormData('fallbackChannel', e.target.value)}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="">Select fallback channel</option>
-                        <option value="sms">SMS</option>
-                        <option value="email">Email</option>
-                    </select>
-                    <p className="text-xs text-slate-500 mt-1">Downgrade to SMS/Email after failure</p>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Remarks
-                    </label>
-                    <textarea
-                        value={formData.remarks}
-                        onChange={(e) => updateFormData('remarks', e.target.value)}
-                        placeholder="Internal notes for operations team only"
-                        rows={3}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
+            {/* Fallback Channel */}
+            <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Fallback Channel
+                </label>
+                <select
+                    value={formData.fallbackChannel}
+                    onChange={(e) => updateFormData('fallbackChannel', e.target.value)}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    <option value="">Select channel</option>
+                    <option value="sms">SMS</option>
+                    <option value="email">Email</option>
+                </select>
+                <p className="text-xs text-slate-500 mt-1">
+                    After phone failure, downgrade to SMS or email
+                </p>
             </div>
         </div>
     );
