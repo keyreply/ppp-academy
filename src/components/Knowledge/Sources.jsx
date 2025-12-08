@@ -77,7 +77,7 @@ export default function Sources({ activeView, setActiveView, onArticleCreate }) 
     };
 
     const renderAllSources = () => (
-        <div className="max-w-5xl mx-auto">
+        <div className="w-full">
             {/* Public Articles */}
             <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6">
                 <div className="flex items-start gap-3 mb-4">
@@ -117,7 +117,7 @@ export default function Sources({ activeView, setActiveView, onArticleCreate }) 
     );
 
     const renderCopilotView = () => (
-        <div className="max-w-5xl mx-auto">
+        <div className="w-full">
             {/* Internal Articles for Copilot */}
             <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6">
                 <div className="flex items-start gap-3 mb-4">
