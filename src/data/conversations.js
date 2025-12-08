@@ -8,6 +8,11 @@ export const allConversationData = [
         statusBadge: "active",
         day: 0,
         preview: "Pattern interrupt activation...",
+        // Inbox fields
+        status: "open",
+        channel: "Messenger",
+        timeAgo: "6m ago",
+        unreadCount: 2,
         steps: [
             {
                 type: "kira",
@@ -186,6 +191,11 @@ export const allConversationData = [
         statusBadge: "active",
         day: "3-7",
         preview: "4-day persistence loop...",
+        // Inbox fields
+        status: "resolved",
+        channel: "Whatsapp",
+        timeAgo: "19m ago",
+        unreadCount: 0,
         steps: [
             // Day 3 Initial Contact
             {
@@ -349,6 +359,11 @@ export const allConversationData = [
         statusBadge: "completed",
         day: 7,
         preview: "Compliance & opt-out...",
+        // Inbox fields
+        status: "pending",
+        channel: "Email",
+        timeAgo: "49m ago",
+        unreadCount: 1,
         steps: [
             {
                 type: "kira",
@@ -426,6 +441,11 @@ export const allConversationData = [
         statusBadge: "active",
         day: 10,
         preview: "Emotional voice connection...",
+        // Inbox fields
+        status: "open",
+        channel: "Instagram",
+        timeAgo: "2h ago",
+        unreadCount: 3,
         steps: [
             {
                 type: "kira",
@@ -571,6 +591,11 @@ export const allConversationData = [
         statusBadge: "active",
         day: 12,
         preview: "Timing conflict solution...",
+        // Inbox fields
+        status: "resolved",
+        channel: "Messenger",
+        timeAgo: "Yesterday",
+        unreadCount: 0,
         steps: [
             {
                 type: "kira",
@@ -723,6 +748,11 @@ export const allConversationData = [
         statusBadge: "active",
         day: 14,
         preview: "Day-of confirmation...",
+        // Inbox fields
+        status: "open",
+        channel: "SMS",
+        timeAgo: "2d ago",
+        unreadCount: 0,
         steps: [
             {
                 type: "kira",
@@ -822,6 +852,11 @@ export const allConversationData = [
         statusBadge: "active",
         day: "Post",
         preview: "Surround sound recovery...",
+        // Inbox fields
+        status: "resolved",
+        channel: "Email",
+        timeAgo: "3d ago",
+        unreadCount: 0,
         steps: [
             {
                 type: "system",

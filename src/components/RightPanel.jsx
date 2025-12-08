@@ -10,7 +10,8 @@ import {
     MicrophoneIcon,
     SparklesIcon,
     PhoneIcon,
-    InformationCircleIcon
+    InformationCircleIcon,
+    ChevronRightIcon
 } from '@heroicons/react/24/outline';
 
 // Map emoji icons to Hero Icons
@@ -34,7 +35,8 @@ export function RightPanel({
     scenario,
     messagesToShow,
     currentStep,
-    conversationLogs
+    conversationLogs,
+    setIsRightPanelOpen
 }) {
     const getIconComponent = (iconEmoji) => {
         const IconComponent = iconMap[iconEmoji] || InformationCircleIcon;
@@ -43,9 +45,16 @@ export function RightPanel({
 
     return (
         <div className="w-[380px] bg-white border-l border-slate-200 flex flex-col">
-            <div className="flex border-b border-slate-200">
+            <div className="flex border-b border-slate-200 relative">
+                <button
+                    onClick={() => setIsRightPanelOpen(false)}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
+                    title="Collapse Panel"
+                >
+                    <ChevronRightIcon className="w-4 h-4" />
+                </button>
                 <div
-                    className={`flex-1 p-3.5 text-center text-[13px] font-medium text-slate-500 cursor-pointer border-b-2 border-transparent transition-all duration-150 ${activePanel === 'profile' ? 'text-blue-500 border-b-blue-500 bg-slate-50' : ''}`}
+                    className={`flex-1 p-3.5 text-center text-[13px] font-medium text-slate-500 cursor-pointer border-b-2 border-transparent transition-all duration-150 pl-8 ${activePanel === 'profile' ? 'text-blue-500 border-b-blue-500 bg-slate-50' : ''}`}
                     onClick={() => setActivePanel('profile')}
                 >
                     Tags & Status

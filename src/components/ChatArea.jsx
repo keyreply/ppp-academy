@@ -5,7 +5,9 @@ import {
     MicrophoneIcon,
     PlayIcon,
     Cog6ToothIcon,
-    SparklesIcon
+    SparklesIcon,
+    ListBulletIcon,
+    ViewColumnsIcon
 } from '@heroicons/react/24/outline';
 import { ZoomLink } from './ZoomLink';
 import VoiceMessage from './VoiceMessage';
@@ -20,14 +22,20 @@ export function ChatArea({
     showInputBox,
     userInput,
     setUserInput,
-    handleSendMessage
+    handleSendMessage,
+    isInboxOpen,
+    setIsInboxOpen,
+    isRightPanelOpen,
+    setIsRightPanelOpen
 }) {
     const messagesEndRef = useRef(null);
 
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
     useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-        }
+        scrollToBottom();
     }, [messagesToShow, isTyping]);
 
 
@@ -71,20 +79,33 @@ export function ChatArea({
 
     return (
         <div className="flex-1 flex flex-col bg-white">
+            {/* Header */}
             <div className="p-4 px-6 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-white to-slate-50">
                 <div className="flex items-center gap-3">
-                    <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm text-white shadow-md"
-                        style={{ background: scenario.avatar.bg }}
-                    >
-                        {scenario.avatar.initials}
-                    </div>
-                    <div>
-                        <h3 className="text-[15px] font-semibold mb-0.5">{scenario.name}</h3>
-                        <p className="text-xs text-slate-500 flex items-center gap-1">
-                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                            Active conversation
-                        </p>
+                    {!isInboxOpen && (
+                        <button
+                            className="py-2 px-3 rounded-md border border-slate-200 bg-white text-slate-500 cursor-pointer transition-all duration-150 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2"
+                            onClick={() => setIsInboxOpen(true)}
+                            title="Expand Inbox"
+                        >
+                            <ListBulletIcon className="w-4 h-4" />
+                            <span className="text-[13px] font-medium">Inbox</span>
+                        </button>
+                    )}
+                    <div className="flex items-center gap-3">
+                        <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm text-white shadow-md"
+                            style={{ background: scenario.avatar.bg }}
+                        >
+                            {scenario.avatar.initials}
+                        </div>
+                        <div>
+                            <h3 className="text-[15px] font-semibold mb-0.5">{scenario.name}</h3>
+                            <p className="text-xs text-slate-500 flex items-center gap-1">
+                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                Active conversation
+                            </p>
+                        </div>
                     </div>
                 </div>
                 <div className="flex gap-2">
@@ -95,6 +116,15 @@ export function ChatArea({
                         >
                             <ArrowPathIcon className="w-4 h-4" />
                             Reset
+                        </button>
+                    )}
+                    {!isRightPanelOpen && (
+                        <button
+                            className="py-2 px-3 rounded-md border border-slate-200 bg-white text-slate-500 cursor-pointer transition-all duration-150 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2"
+                            onClick={() => setIsRightPanelOpen(true)}
+                            title="Show Details"
+                        >
+                            <ViewColumnsIcon className="w-5 h-5" />
                         </button>
                     )}
                 </div>
@@ -175,20 +205,27 @@ export function ChatArea({
             {showInputBox && (
                 <div className="p-4 px-6 bg-white border-t border-slate-200">
                     <div className="flex gap-3 items-end">
-                        <textarea
-                            className="flex-1 p-3 px-4 bg-slate-50 border border-slate-200 rounded-lg text-sm font-inherit resize-none outline-none min-h-[44px] max-h-[120px] focus:border-blue-500 focus:bg-white transition-colors duration-150"
-                            placeholder="Type your response..."
-                            value={userInput}
-                            onChange={(e) => setUserInput(e.target.value)}
-                            onKeyPress={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSendMessage();
-                                }
-                            }}
-                        />
+                        <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-100">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                        </button>
+                        <div className="flex-1 relative">
+                            <textarea
+                                className="w-full p-3 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-inherit resize-none outline-none min-h-[44px] max-h-[120px] focus:border-blue-500 focus:bg-white transition-colors duration-150"
+                                placeholder="Message..."
+                                value={userInput}
+                                onChange={(e) => setUserInput(e.target.value)}
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSendMessage();
+                                    }
+                                }}
+                            />
+                        </div>
                         <button
-                            className="w-11 h-11 bg-gradient-to-br from-blue-500 to-blue-600 border-none rounded-lg text-white cursor-pointer transition-all duration-150 shrink-0 hover:from-blue-600 hover:to-blue-700 hover:scale-105 disabled:from-slate-200 disabled:to-slate-300 disabled:cursor-not-allowed disabled:scale-100 shadow-md hover:shadow-lg flex items-center justify-center"
+                            className="w-11 h-11 bg-blue-600 border-none rounded-full text-white cursor-pointer transition-all duration-150 shrink-0 hover:bg-blue-700 hover:scale-105 disabled:bg-slate-200 disabled:cursor-not-allowed disabled:scale-100 shadow-md hover:shadow-lg flex items-center justify-center"
                             onClick={handleSendMessage}
                             disabled={!userInput.trim()}
                         >
