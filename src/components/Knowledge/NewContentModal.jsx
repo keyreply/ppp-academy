@@ -1,157 +1,168 @@
-import React, { useState } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import React, { useState, useRef } from 'react';
+import { XMarkIcon, DocumentArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
+import { api } from '../../services/api';
 
 export default function NewContentModal({ onClose, onCreateArticle }) {
-    const [contentType, setContentType] = useState('internal');
-    const [title, setTitle] = useState('');
-    const [folder, setFolder] = useState('');
+    const [activeTab, setActiveTab] = useState('upload'); // upload, import
+    const [file, setFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [importUrl, setImportUrl] = useState('');
+    const fileInputRef = useRef(null);
 
-    const handleCreate = () => {
-        if (title.trim()) {
-            onCreateArticle({
-                id: `article-new-${Date.now()}`,
-                title: title,
-                type: contentType === 'internal' ? 'Internal article' : 'Public article',
-                language: 'English',
-                created: 'Just now',
-                createdBy: 'You',
-                lastUpdated: 'Just now',
-                lastUpdatedBy: 'You',
-                finEnabled: false,
-                copilotEnabled: contentType === 'internal',
-                audience: 'Everyone',
-                tags: [],
-                folder: folder || 'Your first folder',
-                content: ''
-            });
+    const handleFileChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
+        }
+    };
+
+    const handleUpload = async () => {
+        if (!file) return;
+
+        setUploading(true);
+        try {
+            const response = await api.documents.upload(file);
+            console.log("Upload response:", response);
+
+            if (onCreateArticle) {
+                onCreateArticle({
+                    id: response.id,
+                    title: response.filename,
+                    type: 'Document',
+                    status: 'processing',
+                    source: 'Upload',
+                    created: new Date().toISOString()
+                });
+            }
             onClose();
+        } catch (error) {
+            console.error("Upload failed:", error);
+            alert("Failed to upload file. Please try again.");
+        } finally {
+            setUploading(false);
         }
     };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50 backdrop-blur-sm">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 pt-6 pb-4">
-                    <h2 className="text-lg font-semibold">Import from Notion</h2>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                    <h2 className="text-lg font-semibold text-gray-900">Add New Content</h2>
                     <button
                         onClick={onClose}
-                        className="text-slate-400 hover:text-slate-600"
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
                     >
                         <XMarkIcon className="w-5 h-5" />
                     </button>
                 </div>
 
-                {/* Step Indicators */}
-                <div className="px-6 pb-6 flex items-center justify-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.544-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        </svg>
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                        </svg>
-                    </div>
+                {/* Tabs */}
+                <div className="flex border-b border-gray-100 px-6">
+                    <button
+                        onClick={() => setActiveTab('upload')}
+                        className={`py-3 mr-6 text-sm font-medium border-b-2 transition-colors ${activeTab === 'upload'
+                                ? 'border-blue-600 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <DocumentArrowUpIcon className="w-4 h-4" />
+                            Upload File
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('import')}
+                        className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'import'
+                                ? 'border-blue-600 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <LinkIcon className="w-4 h-4" />
+                            Import Link
+                        </div>
+                    </button>
                 </div>
 
                 {/* Content */}
-                <div className="px-6 pb-6 space-y-4 border-t border-slate-100 pt-6">
-                    {/* Choose your Notion */}
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Notion Workspace
-                        </label>
-                        <select className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                            <option value="">Select workspace...</option>
-                        </select>
-                    </div>
-
-                    {/* Select a Notion */}
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Database
-                        </label>
-                        <select className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                            <option value="">Select database...</option>
-                        </select>
-                    </div>
-
-                    {/* Select folders */}
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Destination Folder
-                        </label>
-                        <select
-                            value={folder}
-                            onChange={(e) => setFolder(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        >
-                            <option value="">Your first folder</option>
-                            <option value="Processes">Processes</option>
-                            <option value="Pricing">Pricing</option>
-                            <option value="Products Areas">Products Areas</option>
-                            <option value="Security">Security</option>
-                        </select>
-                    </div>
-
-                    {/* Choose how to connect your data */}
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-3">
-                            Import Method
-                        </label>
-                        <div className="space-y-3">
-                            <label className="flex items-start gap-3 cursor-pointer">
+                <div className="p-6">
+                    {activeTab === 'upload' ? (
+                        <div className="space-y-4">
+                            <div
+                                className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${file ? 'border-blue-200 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                                    }`}
+                                onClick={() => fileInputRef.current?.click()}
+                            >
                                 <input
-                                    type="radio"
-                                    value="sync"
-                                    checked={contentType === 'internal'}
-                                    onChange={(e) => setContentType('internal')}
-                                    className="mt-0.5"
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                    accept=".pdf,.docx,.txt,.md"
                                 />
-                                <div className="flex-1">
-                                    <div className="text-sm font-medium text-slate-900">Sync (Auto-update)</div>
-                                    <div className="text-xs text-slate-500">
-                                        Keep content synchronized with your Notion workspace
+                                <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-3">
+                                    <DocumentArrowUpIcon className="w-6 h-6" />
+                                </div>
+                                {file ? (
+                                    <div>
+                                        <p className="font-medium text-gray-900">{file.name}</p>
+                                        <p className="text-sm text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                        <p className="text-xs text-blue-600 mt-2">Click to replace</p>
                                     </div>
-                                </div>
-                            </label>
-                            <label className="flex items-start gap-3 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    value="import"
-                                    checked={contentType === 'public'}
-                                    onChange={(e) => setContentType('public')}
-                                    className="mt-0.5"
-                                />
-                                <div className="flex-1">
-                                    <div className="text-sm font-medium text-slate-900">One-time Import</div>
-                                </div>
-                            </label>
+                                ) : (
+                                    <div>
+                                        <p className="font-medium text-gray-900">Click to upload or drag & drop</p>
+                                        <p className="text-sm text-gray-500 mt-1">PDF, DOCX, TXT up to 10MB</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Web Page URL
+                                </label>
+                                <input
+                                    type="url"
+                                    value={importUrl}
+                                    onChange={(e) => setImportUrl(e.target.value)}
+                                    placeholder="https://example.com/article"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    We'll extract text from this page to add to your knowledge base.
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-end gap-3 px-6 pb-6">
+                <div className="flex items-center justify-end gap-3 px-6 pb-6 pt-2">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        disabled={uploading}
                     >
                         Cancel
                     </button>
                     <button
-                        onClick={handleCreate}
-                        className="px-4 py-2 text-sm font-medium bg-slate-200 text-slate-400 rounded-lg cursor-not-allowed"
-                        disabled
+                        onClick={activeTab === 'upload' ? handleUpload : onClose}
+                        className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors flex items-center gap-2 ${uploading || (activeTab === 'upload' && !file)
+                                ? 'bg-blue-300 cursor-not-allowed'
+                                : 'bg-blue-600 hover:bg-blue-700 shadow-sm'
+                            }`}
+                        disabled={uploading || (activeTab === 'upload' && !file)}
                     >
-                        Sync
+                        {uploading ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                Uploading...
+                            </>
+                        ) : (
+                            activeTab === 'upload' ? 'Upload Content' : 'Import Link'
+                        )}
                     </button>
                 </div>
             </div>

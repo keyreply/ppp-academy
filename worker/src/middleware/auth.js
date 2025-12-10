@@ -9,12 +9,19 @@
  */
 export async function authMiddleware(c, next) {
   const authHeader = c.req.header('Authorization');
+  let sessionToken;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized', message: 'Missing or invalid authorization header' }, 401);
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    sessionToken = authHeader.substring(7);
+  } else {
+    // Check for token in query params (useful for WebSockets)
+    const url = new URL(c.req.url);
+    sessionToken = url.searchParams.get('token');
   }
 
-  const sessionToken = authHeader.substring(7);
+  if (!sessionToken) {
+    return c.json({ error: 'Unauthorized', message: 'Missing or invalid authorization credentials' }, 401);
+  }
 
   try {
     // Query D1 for session validation
@@ -25,8 +32,8 @@ export async function authMiddleware(c, next) {
        JOIN users u ON s.user_id = u.id
        WHERE s.token = ? AND s.expires_at > datetime('now') AND s.revoked_at IS NULL`
     )
-    .bind(sessionToken)
-    .first();
+      .bind(sessionToken)
+      .first();
 
     if (!session) {
       return c.json({ error: 'Unauthorized', message: 'Invalid or expired session' }, 401);
@@ -58,8 +65,8 @@ export async function authMiddleware(c, next) {
     await c.env.DB.prepare(
       'UPDATE sessions SET last_activity = datetime(\'now\') WHERE id = ?'
     )
-    .bind(session.id)
-    .run();
+      .bind(session.id)
+      .run();
 
     // Update member activity in TenantDO (async, non-blocking)
     try {
@@ -196,8 +203,8 @@ export async function optionalAuth(c, next) {
          JOIN users u ON s.user_id = u.id
          WHERE s.token = ? AND s.expires_at > datetime('now') AND s.revoked_at IS NULL`
       )
-      .bind(sessionToken)
-      .first();
+        .bind(sessionToken)
+        .first();
 
       if (session) {
         const permissions = session.permissions ? JSON.parse(session.permissions) : [];
@@ -239,8 +246,8 @@ export async function apiKeyAuth(c, next) {
        JOIN tenants t ON k.tenant_id = t.id
        WHERE k.key_hash = ? AND k.revoked_at IS NULL AND k.expires_at > datetime('now')`
     )
-    .bind(await hashApiKey(apiKey))
-    .first();
+      .bind(await hashApiKey(apiKey))
+      .first();
 
     if (!keyData) {
       return c.json({ error: 'Unauthorized', message: 'Invalid or expired API key' }, 401);
@@ -265,8 +272,8 @@ export async function apiKeyAuth(c, next) {
       c.env.DB.prepare(
         'UPDATE api_keys SET last_used_at = datetime(\'now\'), usage_count = usage_count + 1 WHERE id = ?'
       )
-      .bind(keyData.id)
-      .run()
+        .bind(keyData.id)
+        .run()
     );
 
     await next();

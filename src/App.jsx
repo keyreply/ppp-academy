@@ -14,6 +14,8 @@ import KnowledgeBase from './components/Knowledge/KnowledgeBase';
 import TaskManagement from './components/Tasks/TaskManagement';
 import { allConversationData } from './data/conversations';
 import { generateAIResponse } from './utils/ai';
+import { api } from './services/api';
+import { conversationService } from './services/conversationService';
 
 function App() {
   const [isInboxOpen, setIsInboxOpen] = useState(true);
@@ -28,29 +30,76 @@ function App() {
 
   const [userInput, setUserInput] = useState('');
   const [editingBrand, setEditingBrand] = useState(null);
-  const [brands, setBrands] = useState([
-    {
-      id: 'lr0gyz71',
-      name: 'key',
-      agent: 'Kira',
-      defaultAddress: 'support@key.com',
-      status: 'Default brand',
-      iconColor: 'text-white bg-blue-600'
-    }
-  ]);
+  const [brands, setBrands] = useState([]);
+  const [loadingBrands, setLoadingBrands] = useState(false);
 
-  const handleSaveBrand = (updatedBrand) => {
-    if (brands.find(b => b.id === updatedBrand.id)) {
-      setBrands(brands.map(b => b.id === updatedBrand.id ? updatedBrand : b));
-    } else {
-      setBrands([...brands, { ...updatedBrand, iconColor: 'text-white bg-blue-600' }]);
+  useEffect(() => {
+    if (currentView === 'brands') {
+      fetchBrands();
     }
-    setEditingBrand(null);
+  }, [currentView]);
+
+  const fetchBrands = async () => {
+    try {
+      setLoadingBrands(true);
+      const data = await api.customers.list();
+      // Map API response to UI model if needed, or use as is
+      // Assuming API returns { customers: [...] } or array
+      const customerList = data.customers || data || [];
+      const mappedBrands = customerList.map(c => ({
+        id: c.id,
+        name: c.name,
+        agent: 'Kira', // Default or from API
+        defaultAddress: c.email || '',
+        status: c.status || 'Active',
+        iconColor: 'text-white bg-blue-600', // You might want to generate this based on name
+        // preserves other fields
+        ...c
+      }));
+      setBrands(mappedBrands);
+    } catch (error) {
+      console.error("Failed to fetch brands:", error);
+      // Fallback to mock if API fails in dev? Or just show empty.
+    } finally {
+      setLoadingBrands(false);
+    }
+  };
+
+  const handleSaveBrand = async (updatedBrand) => {
+    try {
+      if (updatedBrand.isNew) {
+        // Create
+        const { isNew, ...brandData } = updatedBrand;
+        await api.customers.create(brandData);
+      } else {
+        // Update
+        await api.customers.update(updatedBrand.id, updatedBrand);
+      }
+      await fetchBrands(); // Refresh list
+      setEditingBrand(null);
+    } catch (error) {
+      console.error("Failed to save brand:", error);
+      alert("Failed to save brand. Please try again.");
+    }
+  };
+
+  const handleDeleteBrand = async (brandId) => {
+    if (!window.confirm("Are you sure you want to delete this brand?")) return;
+    try {
+      await api.customers.delete(brandId);
+      await fetchBrands();
+      setEditingBrand(null);
+    } catch (error) {
+      console.error("Failed to delete brand:", error);
+      alert("Failed to delete brand.");
+    }
   };
 
   const handleNewBrand = () => {
     setEditingBrand({
-      id: Math.random().toString(36).substr(2, 9),
+      id: '', // Server assigns ID usually, or generates on client? Plan said 'Customer DO', ID usually 'customer' + specific ID.
+      // If client generates: crypto.randomUUID()
+      // If server: leave empty/temp
       name: '',
       agent: 'Kira',
       defaultAddress: '',
@@ -68,6 +117,76 @@ function App() {
   const [previewMode, setPreviewMode] = useState('kira');
 
   const messagesEndRef = useRef(null);
+
+  // Real-time integration
+  const [realConversations, setRealConversations] = useState([]);
+  const [isRealMode, setIsRealMode] = useState(false);
+  const [activeConversationId, setActiveConversationId] = useState(null);
+
+  // Fetch real conversations and subscribe to updates
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          setIsRealMode(true);
+          // In a real implementation we would fetch the list here
+          // const data = await conversationService.getConversations();
+          // setRealConversations(data);
+
+          // Connect to the active conversation if present
+          if (activeConversationId) {
+            conversationService.connect(activeConversationId);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch real conversations:", err);
+      }
+    };
+    fetchConversations();
+  }, [activeConversationId]);
+
+  // Subscribe to real-time events
+  useEffect(() => {
+    if (!isRealMode) return;
+
+    const unsubscribeMessage = conversationService.subscribe('message', (message) => {
+      // Append new message to history
+      setConversationHistory(prev => {
+        // Avoid duplicates
+        if (prev.some(m => m.id === message.id)) return prev;
+
+        // Convert API message format to UI format
+        const uiMessage = {
+          id: message.id,
+          type: message.sender_type === 'user' ? 'user' : 'kira',
+          content: message.content,
+          timestamp: new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          hasVoice: false // Handle attachments if needed
+        };
+        return [...prev, uiMessage];
+      });
+
+      // Log for demo purposes
+      addLog("Real-time Message", `Received message from ${message.sender_name || 'User'}`);
+    });
+
+    const unsubscribeTyping = conversationService.subscribe('typing', (data) => {
+      if (data.user_id !== 'me') { // Filter self
+        setIsTyping(data.is_typing);
+      }
+    });
+
+    return () => {
+      unsubscribeMessage();
+      unsubscribeTyping();
+    };
+  }, [isRealMode]);
+
+  // Combined conversation list
+  // For the demo we append real conversations? Or strictly separate?
+  // Let's keep demo data for now as primary unless we have real data logic fully mapped.
+  // Ideally: const displayConversations = [...allConversationData, ...mappedRealConversations];
 
   const scenario = allConversationData[selectedScenario];
 
@@ -137,7 +256,7 @@ function App() {
     }, 1000);
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!userInput.trim()) return;
 
     const userMessage = {
@@ -153,20 +272,47 @@ function App() {
     setUserInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      setIsTyping(false);
-      const aiResponse = generateAIResponse(input);
+    if (isRealMode && activeConversationId) {
+      try {
+        await conversationService.sendMessage(activeConversationId, input);
+        // No need to manually add to history, WebSocket listener will handle it
+        setIsTyping(false);
+        return;
+      } catch (error) {
+        console.error("Failed to send message:", error);
+        addLog("Error", "Failed to send message via backend");
+        // Fallback to demo mode if backend fails? 
+        // For now, let's allow fall-through to demo RAG for testing if no active convo
+      }
+    }
 
-      const kiraMessage = {
-        type: "kira",
-        content: aiResponse.content,
-        options: aiResponse.options,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
+    setTimeout(async () => {
+      try {
+        // Use RAG API instead of mock
+        const response = await api.conversations.askRAG(input, scenario.title); // Pass scenario title as context if needed
 
-      setConversationHistory(prev => [...prev, kiraMessage]);
-      addLog("AI Generated Response", "Response generated using keyword detection and intent classification");
-    }, 1200);
+        const kiraMessage = {
+          type: "kira",
+          content: response.response,
+          // options: response.options, // RAG response structure might differ. If options needed, backend must provide.
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        setConversationHistory(prev => [...prev, kiraMessage]);
+        addLog("AI Response", "Response received from RAG Agent");
+      } catch (error) {
+        console.error("Chat Error:", error);
+        const errorMessage = {
+          type: "system",
+          content: "Sorry, I'm having trouble connecting right now.",
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setConversationHistory(prev => [...prev, errorMessage]);
+        addLog("Error", "Failed to get AI response");
+      } finally {
+        setIsTyping(false);
+      }
+    }, 600); // Reduce mock delay since we have real network latency
   };
 
   const handleReset = () => {
@@ -276,6 +422,7 @@ function App() {
           brand={editingBrand}
           onCancel={() => setEditingBrand(null)}
           onSave={handleSaveBrand}
+          onDelete={() => handleDeleteBrand(editingBrand.id)}
         />
       )}
 

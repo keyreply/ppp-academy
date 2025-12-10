@@ -12,7 +12,7 @@ import {
     PhotoIcon
 } from '@heroicons/react/24/outline';
 
-const EditBrand = ({ brand, onCancel, onSave }) => {
+const EditBrand = ({ brand, onCancel, onSave, onDelete }) => {
     const [formData, setFormData] = useState(brand);
     const [copied, setCopied] = useState(false);
 
@@ -28,6 +28,14 @@ const EditBrand = ({ brand, onCancel, onSave }) => {
             <header className="bg-white border-b border-gray-200 h-16 px-6 flex items-center justify-between shrink-0 sticky top-0 z-10">
                 <h1 className="text-xl font-bold text-gray-900">{brand.isNew ? 'New brand' : 'Edit brand'}</h1>
                 <div className="flex items-center gap-3">
+                    {!brand.isNew && onDelete && (
+                        <button
+                            onClick={onDelete}
+                            className="text-red-600 hover:text-red-700 font-medium text-sm flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors mr-2"
+                        >
+                            Delete
+                        </button>
+                    )}
                     <button className="text-gray-500 hover:text-gray-700 font-medium text-sm flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
                         <BookOpenIcon className="w-4 h-4" />
                         Learn

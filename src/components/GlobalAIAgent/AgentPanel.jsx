@@ -13,6 +13,7 @@ import {
 import KnowledgeBase from './KnowledgeBase';
 
 import { generateGeminiResponse } from '../../services/gemini';
+import { api } from '../../services/api';
 
 const AgentPanel = ({ isOpen, onClose, currentView, setCurrentView, context }) => {
     const [messages, setMessages] = useState([
@@ -236,119 +237,19 @@ const AgentPanel = ({ isOpen, onClose, currentView, setCurrentView, context }) =
         setAttachedFiles([]);
         setIsTyping(true);
 
-        // Check for specific demo triggers first
-        if (text.includes("Draft email to team") || text.includes("Create Q4 projection") || text.includes("Summarize Page") || text.includes("Analyze Document")) {
-            // ... (Keep existing mock logic for specific demo flows) ...
-            setTimeout(() => {
-                let aiContent = null;
-                // ... (Logic from previous step) ...
-                if (text.includes("Draft email to team")) {
-                    aiContent = (
-                        <div className="space-y-3">
-                            <p className="text-sm text-gray-600">Here's a draft email based on the Q3 report findings:</p>
-                            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                                <div className="border-b border-gray-100 pb-2 mb-2">
-                                    <p className="text-xs text-gray-500">Subject: <span className="text-gray-900 font-medium">Q3 Performance Update - Strong Growth! 🚀</span></p>
-                                </div>
-                                <p className="text-sm text-gray-800 leading-relaxed">
-                                    Hi Team,<br /><br />
-                                    I'm pleased to share that our Q3 results are in, and the numbers look great! We achieved <strong>$2.4M in revenue</strong> (+18% YoY) and welcomed <strong>340 new customers</strong>.<br /><br />
-                                    A big shoutout to everyone for their hard work. Let's keep this momentum going into Q4!<br /><br />
-                                    Best,<br />
-                                    [Your Name]
-                                </p>
-                            </div>
-                            <div className="flex gap-2">
-                                <button className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors">Send to Outlook</button>
-                                <button className="text-xs bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">Copy Text</button>
-                            </div>
-                        </div>
-                    );
-                } else if (text.includes("Create Q4 projection")) {
-                    aiContent = (
-                        <div className="space-y-3">
-                            <p className="text-sm text-gray-600">I've generated a Q4 projection based on current growth trends:</p>
-                            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                                <h4 className="text-sm font-bold text-gray-900 mb-3">Q4 Revenue Projection</h4>
-                                <div className="space-y-3">
-                                    <div>
-                                        <div className="flex justify-between text-xs mb-1">
-                                            <span className="text-gray-600">Conservative (+10%)</span>
-                                            <span className="font-medium">$2.64M</span>
-                                        </div>
-                                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                            <div className="h-full bg-blue-400 w-[70%]"></div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between text-xs mb-1">
-                                            <span className="text-gray-600">Expected (+18%)</span>
-                                            <span className="font-medium">$2.83M</span>
-                                        </div>
-                                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                            <div className="h-full bg-indigo-500 w-[85%]"></div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between text-xs mb-1">
-                                            <span className="text-gray-600">Aggressive (+25%)</span>
-                                            <span className="font-medium">$3.00M</span>
-                                        </div>
-                                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                            <div className="h-full bg-purple-500 w-[95%]"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-3">
-                                    *Based on 3.2% churn rate and current enterprise pipeline.
-                                </p>
-                            </div>
-                            <button className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors">Save to Dashboard</button>
-                        </div>
-                    );
-                } else if (text.includes("Summarize Page")) {
-                    aiContent = (
-                        <div className="space-y-2">
-                            <p className="font-medium">Key Takeaways from {context.page}:</p>
-                            <ul className="list-disc pl-4 text-gray-700 space-y-1">
-                                <li>Active users increased by 12% this week.</li>
-                                <li>3 pending alerts require attention.</li>
-                                <li>System performance is stable at 99.9% uptime.</li>
-                            </ul>
-                            <div className="mt-3">
-                                <button onClick={() => handleSendMessage("Show pending alerts")} className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors">Show pending alerts</button>
-                            </div>
-                        </div>
-                    );
-                } else {
-                    // Fallback for Analyze Document if not caught above
-                    aiContent = "I've analyzed the document. (Mock response)";
-                }
-
-                const aiResponse = {
-                    id: Date.now() + 1,
-                    type: 'ai',
-                    content: aiContent,
-                    timestamp: new Date().toISOString()
-                };
-                setMessages(prev => [...prev, aiResponse]);
-                setIsTyping(false);
-            }, 1500);
-            return;
-        }
-
-        // Use Gemini for general queries
         try {
-            const responseText = await generateGeminiResponse(text, context.page);
+            // Use RAG API for all queries
+            const response = await api.chat.send(text, context.page);
 
             const aiResponse = {
                 id: Date.now() + 1,
                 type: 'ai',
-                content: responseText || "I'm sorry, I couldn't process that request.",
+                content: response.response || "I'm sorry, I couldn't process that request.",
                 timestamp: new Date().toISOString()
             };
             setMessages(prev => [...prev, aiResponse]);
         } catch (error) {
+            console.error('AI Error:', error);
             const errorResponse = {
                 id: Date.now() + 1,
                 type: 'ai',
@@ -551,8 +452,8 @@ const AgentPanel = ({ isOpen, onClose, currentView, setCurrentView, context }) =
                                         <button
                                             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                                             className={`p-1.5 rounded-lg transition-colors ${showEmojiPicker
-                                                    ? 'text-indigo-600 bg-indigo-50'
-                                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                                ? 'text-indigo-600 bg-indigo-50'
+                                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                                                 }`}
                                             title="选择表情"
                                         >

@@ -3,6 +3,7 @@ import { PlusIcon, CheckCircleIcon, ArrowPathIcon, ChevronDownIcon } from '@hero
 import { knowledgeData, copilotIntegrations } from '../../data/knowledgeData';
 import IntegrationModal from './IntegrationModal';
 import NewContentModal from './NewContentModal';
+import { api } from '../../services/api';
 
 export default function Sources({ activeView, setActiveView, onArticleCreate }) {
     const [showModal, setShowModal] = useState(false);
@@ -76,41 +77,106 @@ export default function Sources({ activeView, setActiveView, onArticleCreate }) 
         );
     };
 
+    const [documents, setDocuments] = useState([]);
+    const [loadingDocs, setLoadingDocs] = useState(true);
+
+    // Fetch documents on load
+    useEffect(() => {
+        const fetchDocuments = async () => {
+            try {
+                const data = await api.documents.list();
+                if (data && data.documents) {
+                    setDocuments(data.documents);
+                }
+            } catch (err) {
+                console.error("Failed to fetch documents:", err);
+            } finally {
+                setLoadingDocs(false);
+            }
+        };
+
+        fetchDocuments();
+    }, []);
+
+    // Refresh documents when new one is created
+    useEffect(() => {
+        // This is a bit of a hack since onArticleCreate is passed from parent
+        // ideally we would lift state up, but for now we can just re-fetch if we had a trigger
+    }, []);
+
+
     const renderAllSources = () => (
-        <div className="w-full">
-            {/* Public Articles */}
-            <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6">
+        <div className="w-full space-y-6">
+            {/* Uploaded Documents Section */}
+            <div className="bg-white rounded-lg border border-slate-200 p-6">
                 <div className="flex items-start gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                        <DocumentTextIcon className="w-6 h-6 text-slate-600" />
+                    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                        <DocumentTextIcon className="w-6 h-6 text-blue-600" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="font-semibold text-slate-900 mb-1">Public Articles</h3>
+                        <h3 className="font-semibold text-slate-900 mb-1">Uploaded Documents</h3>
                         <p className="text-sm text-slate-600">
-                            Enable AI Agent and Copilot to use public articles from your Help Center.
+                            Files you've uploaded to the Knowledge Base.
                         </p>
                     </div>
                 </div>
-                <div className="space-y-1">
-                    {knowledgeData.sources.publicArticles.map(item => renderIntegrationCard(item, true))}
-                </div>
+
+                {loadingDocs ? (
+                    <div className="text-center py-4 text-sm text-slate-500">Loading documents...</div>
+                ) : documents.length === 0 ? (
+                    <div className="text-center py-4 text-sm text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                        No documents found. Click "New content" to upload.
+                    </div>
+                ) : (
+                    <div className="space-y-1">
+                        {documents.map(doc => (
+                            <div key={doc.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 px-2 rounded-lg transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+                                        <DocumentTextIcon className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <div className="font-medium text-slate-900">{doc.original_name}</div>
+                                        <div className="text-xs text-slate-500">
+                                            {(doc.file_size / 1024 / 1024).toFixed(2)} MB • {new Date(doc.uploaded_at).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className={`text-xs px-2 py-1 rounded-full ${doc.status === 'ready' ? 'bg-green-100 text-green-700' :
+                                        doc.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
+                                            'bg-red-100 text-red-700'
+                                        }`}>
+                                        {doc.status}
+                                    </span>
+                                    <button
+                                        onClick={() => api.documents.delete(doc.id).then(() => setDocuments(docs => docs.filter(d => d.id !== doc.id)))}
+                                        className="text-xs text-red-500 hover:text-red-700"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
-            {/* Internal Articles */}
+            {/* Public Articles */}
             <div className="bg-white rounded-lg border border-slate-200 p-6">
                 <div className="flex items-start gap-3 mb-4">
                     <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
                         <FolderIcon className="w-6 h-6 text-slate-600" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="font-semibold text-slate-900 mb-1">Internal Articles</h3>
+                        <h3 className="font-semibold text-slate-900 mb-1">Integrations</h3>
                         <p className="text-sm text-slate-600">
-                            Provide Copilot with internal knowledge accessible only to your team.
+                            Connect external sources like Zendesk, Notion, etc.
                         </p>
                     </div>
                 </div>
                 <div className="space-y-1">
-                    {knowledgeData.sources.internalArticles.map(item => renderIntegrationCard(item, false))}
+                    {knowledgeData.sources.publicArticles.map(item => renderIntegrationCard(item, true))}
                 </div>
             </div>
         </div>

@@ -85,6 +85,15 @@ queue = "ppp-academy-document-processing"
 max_batch_size = 10
 max_batch_timeout = 30
 
+[[queues.producers]]
+binding = "ANALYTICS_QUEUE"
+queue = "ppp-academy-analytics"
+
+[[queues.consumers]]
+queue = "ppp-academy-analytics"
+max_batch_size = 100
+max_batch_timeout = 10
+
 # Workers AI
 [ai]
 binding = "AI"
