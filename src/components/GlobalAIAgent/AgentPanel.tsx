@@ -16,6 +16,7 @@ import KnowledgeBase from './KnowledgeBase';
 // AI Elements
 import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
 import { Message, MessageContent, MessageResponse, MessageActions, MessageAction } from '@/components/ai-elements/message';
+import { PromptInput, PromptInputTextarea, PromptInputFooter, PromptInputTools, PromptInputButton, PromptInputSubmit } from '@/components/ai-elements/prompt-input';
 import { Suggestions, Suggestion } from '@/components/ai-elements/suggestion';
 import { Loader } from '@/components/ai-elements/loader';
 
@@ -227,6 +228,9 @@ const AgentPanel: React.FC<AgentPanelProps> = ({
             console.error('Failed to copy:', err);
         }
     };
+
+    // Get chat status for PromptInput
+    const chatStatus = isLoading ? 'streaming' : error ? 'error' : 'ready';
 
     return (
         <div
@@ -466,70 +470,54 @@ const AgentPanel: React.FC<AgentPanelProps> = ({
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="w-full">
-                            <div className="flex flex-col gap-2 p-3 border border-slate-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-indigo-200 focus-within:border-indigo-300">
-                                <textarea
-                                    value={input}
-                                    onChange={handleInputChange}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            handleSubmit(e as unknown as React.FormEvent);
-                                        }
-                                    }}
-                                    placeholder="Ask AI anything..."
-                                    disabled={isLoading}
-                                    className="w-full resize-none border-0 bg-transparent text-sm focus:outline-none min-h-[44px] max-h-[120px] text-slate-700 placeholder:text-slate-400"
-                                    rows={1}
-                                />
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-1">
-                                        <button
-                                            type="button"
-                                            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                                            title="Attach files (coming soon)"
-                                        >
-                                            <PaperclipIcon className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={handleVoiceInput}
-                                            className={`p-1.5 rounded-lg transition-all ${
-                                                isRecording
-                                                    ? 'text-red-600 bg-red-50 animate-pulse'
-                                                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                                            }`}
-                                            title={isRecording ? 'Recording... Click to stop' : 'Voice input'}
-                                        >
-                                            <MicIcon className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {isLoading && (
-                                            <button
-                                                type="button"
-                                                onClick={stop}
-                                                className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"
-                                                title="Stop generating"
-                                            >
-                                                <SquareIcon className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                        <button
-                                            type="submit"
-                                            disabled={!input.trim() || isLoading}
-                                            className={`p-2 rounded-lg transition-all ${
-                                                input.trim() && !isLoading
-                                                    ? 'bg-indigo-500 text-white shadow-md hover:bg-indigo-600'
-                                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                            }`}
-                                        >
-                                            <SendIcon className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
+                        <PromptInput
+                            onSubmit={({ text }) => {
+                                if (!text.trim()) return;
+                                setInput(text);
+                                // Submit after state update
+                                setTimeout(() => {
+                                    const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+                                    handleSubmit(fakeEvent);
+                                }, 0);
+                            }}
+                            className="rounded-xl"
+                        >
+                            <PromptInputTextarea
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                placeholder="Ask AI anything..."
+                                disabled={isLoading}
+                                className="min-h-[44px]"
+                            />
+                            <PromptInputFooter>
+                                <PromptInputTools>
+                                    <PromptInputButton title="Attach files (coming soon)">
+                                        <PaperclipIcon className="w-4 h-4" />
+                                    </PromptInputButton>
+                                    <PromptInputButton
+                                        onClick={handleVoiceInput}
+                                        title={isRecording ? 'Recording... Click to stop' : 'Voice input'}
+                                        className={isRecording ? 'text-red-600 bg-red-50 animate-pulse' : ''}
+                                    >
+                                        <MicIcon className="w-4 h-4" />
+                                    </PromptInputButton>
+                                </PromptInputTools>
+                                <PromptInputTools>
+                                    {isLoading && (
+                                        <PromptInputButton onClick={stop} title="Stop generating">
+                                            <SquareIcon className="w-4 h-4" />
+                                        </PromptInputButton>
+                                    )}
+                                    <PromptInputSubmit
+                                        status={chatStatus as 'ready' | 'streaming' | 'error'}
+                                        disabled={!input.trim() || isLoading}
+                                        className={input.trim() && !isLoading ? 'bg-indigo-500 text-white hover:bg-indigo-600' : ''}
+                                    >
+                                        <SendIcon className="w-4 h-4" />
+                                    </PromptInputSubmit>
+                                </PromptInputTools>
+                            </PromptInputFooter>
+                        </PromptInput>
                     </div>
                 </div>
 
