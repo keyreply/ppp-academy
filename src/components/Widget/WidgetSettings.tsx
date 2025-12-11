@@ -7,11 +7,20 @@ import {
     Cog6ToothIcon,
     ClipboardDocumentIcon,
     CheckIcon,
-    EyeIcon,
     DevicePhoneMobileIcon,
     ComputerDesktopIcon,
-    ArrowPathIcon
+    ArrowPathIcon,
+    XMarkIcon,
+    ChevronDownIcon
 } from '@heroicons/react/24/outline';
+import { SendIcon } from 'lucide-react';
+
+// AI Elements for chat preview
+import { Conversation, ConversationContent } from '@/components/ai-elements/conversation';
+import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
+import { PromptInput, PromptInputTextarea, PromptInputFooter, PromptInputTools, PromptInputSubmit } from '@/components/ai-elements/prompt-input';
+import { Suggestions, Suggestion } from '@/components/ai-elements/suggestion';
+import { Loader } from '@/components/ai-elements/loader';
 
 interface WidgetSettings {
     brandColor: string;
@@ -436,71 +445,155 @@ export default function WidgetSettings() {
                                 <div className={`absolute bottom-4 ${settings.position === 'bottom-right' ? 'right-4' : 'left-4'} transition-all`}>
                                     {previewOpen ? (
                                         <div
-                                            className={`bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden ${
-                                                previewMode === 'mobile' ? 'w-[280px]' : 'w-72'
+                                            className={`bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col ${
+                                                previewMode === 'mobile' ? 'w-[280px] h-[400px]' : 'w-80 h-[420px]'
                                             }`}
                                             style={{ animation: 'slideUp 0.2s ease-out' }}
                                         >
                                             {/* Widget Header */}
                                             <div
-                                                className="p-4 relative overflow-hidden"
+                                                className="p-3 relative overflow-hidden shrink-0"
                                                 style={{ backgroundColor: settings.brandColor }}
                                             >
                                                 <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
                                                 <div className="relative flex items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
                                                             <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5 text-white" />
                                                         </div>
                                                         <div>
                                                             <p className="text-white font-semibold text-sm">Kira Assistant</p>
-                                                            <p className="text-white/70 text-xs">Online</p>
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                                                <p className="text-white/70 text-xs">Online</p>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     <button
                                                         onClick={() => setPreviewOpen(false)}
-                                                        className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                                                        className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
                                                     >
-                                                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                        </svg>
+                                                        <ChevronDownIcon className="w-4 h-4 text-white" />
                                                     </button>
                                                 </div>
                                             </div>
-                                            {/* Widget Body */}
-                                            <div className="p-4 h-40 bg-slate-50">
-                                                <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 max-w-[85%]">
-                                                    <p className="text-sm text-slate-700">{settings.welcomeMessage}</p>
-                                                </div>
-                                                {settings.showTypingIndicator && (
-                                                    <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
-                                                        <div className="flex gap-1">
-                                                            <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                                            <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                                            <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+
+                                            {/* Widget Body - Using AI Elements */}
+                                            <Conversation className="flex-1 bg-slate-50/50">
+                                                <ConversationContent className="p-3 gap-3">
+                                                    {/* Welcome Message */}
+                                                    <Message from="assistant">
+                                                        <div className="flex gap-2">
+                                                            <div
+                                                                className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
+                                                                style={{ backgroundColor: settings.brandColor }}
+                                                            >
+                                                                K
+                                                            </div>
+                                                            <MessageContent className="bg-white border border-slate-100 rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm">
+                                                                <MessageResponse className="text-sm">{settings.welcomeMessage}</MessageResponse>
+                                                            </MessageContent>
                                                         </div>
-                                                        <span>Kira is typing...</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {/* Widget Input */}
-                                            <div className="p-3 border-t border-slate-200 bg-white">
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="text"
+                                                    </Message>
+
+                                                    {/* Sample User Message */}
+                                                    <Message from="user">
+                                                        <MessageContent
+                                                            className="text-white rounded-2xl rounded-tr-sm px-3 py-2 text-sm ml-auto"
+                                                            style={{ backgroundColor: settings.brandColor }}
+                                                        >
+                                                            How can you help me?
+                                                        </MessageContent>
+                                                    </Message>
+
+                                                    {/* Sample Assistant Response */}
+                                                    <Message from="assistant">
+                                                        <div className="flex gap-2">
+                                                            <div
+                                                                className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
+                                                                style={{ backgroundColor: settings.brandColor }}
+                                                            >
+                                                                K
+                                                            </div>
+                                                            <MessageContent className="bg-white border border-slate-100 rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm">
+                                                                <MessageResponse className="text-sm">
+                                                                    I can help you with product questions, technical support, and general inquiries. What would you like to know?
+                                                                </MessageResponse>
+                                                            </MessageContent>
+                                                        </div>
+                                                    </Message>
+
+                                                    {/* Typing Indicator */}
+                                                    {settings.showTypingIndicator && (
+                                                        <Message from="assistant">
+                                                            <div className="flex gap-2 items-center">
+                                                                <div
+                                                                    className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
+                                                                    style={{ backgroundColor: settings.brandColor }}
+                                                                >
+                                                                    K
+                                                                </div>
+                                                                <div className="bg-white border border-slate-100 rounded-2xl rounded-tl-sm px-3 py-2.5 shadow-sm">
+                                                                    <Loader size={14} style={{ color: settings.brandColor }} />
+                                                                </div>
+                                                            </div>
+                                                        </Message>
+                                                    )}
+
+                                                    {/* Quick Suggestions */}
+                                                    <Suggestions className="flex-wrap gap-1.5 mt-1">
+                                                        <Suggestion
+                                                            suggestion="Pricing"
+                                                            className="text-xs px-2.5 py-1 h-auto"
+                                                            style={{
+                                                                borderColor: settings.brandColor + '40',
+                                                                color: settings.brandColor
+                                                            }}
+                                                        />
+                                                        <Suggestion
+                                                            suggestion="Features"
+                                                            className="text-xs px-2.5 py-1 h-auto"
+                                                            style={{
+                                                                borderColor: settings.brandColor + '40',
+                                                                color: settings.brandColor
+                                                            }}
+                                                        />
+                                                        <Suggestion
+                                                            suggestion="Support"
+                                                            className="text-xs px-2.5 py-1 h-auto"
+                                                            style={{
+                                                                borderColor: settings.brandColor + '40',
+                                                                color: settings.brandColor
+                                                            }}
+                                                        />
+                                                    </Suggestions>
+                                                </ConversationContent>
+                                            </Conversation>
+
+                                            {/* Widget Input - Using PromptInput */}
+                                            <div className="p-2 border-t border-slate-100 bg-white shrink-0">
+                                                <PromptInput
+                                                    onSubmit={() => {}}
+                                                    className="rounded-xl border-slate-200"
+                                                >
+                                                    <PromptInputTextarea
                                                         placeholder="Type a message..."
-                                                        className="flex-1 px-4 py-2 bg-slate-100 rounded-full text-sm focus:outline-none"
-                                                        readOnly
+                                                        className="min-h-[36px] text-sm py-2"
+                                                        disabled
                                                     />
-                                                    <button
-                                                        className="p-2 rounded-full text-white transition-transform hover:scale-105"
-                                                        style={{ backgroundColor: settings.brandColor }}
-                                                    >
-                                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
+                                                    <PromptInputFooter className="pt-1">
+                                                        <PromptInputTools />
+                                                        <PromptInputTools>
+                                                            <PromptInputSubmit
+                                                                status="ready"
+                                                                className="text-white h-7 w-7"
+                                                                style={{ backgroundColor: settings.brandColor }}
+                                                            >
+                                                                <SendIcon className="w-3.5 h-3.5" />
+                                                            </PromptInputSubmit>
+                                                        </PromptInputTools>
+                                                    </PromptInputFooter>
+                                                </PromptInput>
                                             </div>
                                         </div>
                                     ) : (

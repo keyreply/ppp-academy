@@ -77,13 +77,41 @@ This is a full-stack application with a React frontend and **two independent Clo
 
 ### Frontend (`src/`)
 - **Framework**: React 19 with Vite 7, TypeScript
-- **Styling**: Tailwind CSS 4
+- **Styling**: Tailwind CSS 4 with shadcn/ui components
+- **UI Components**: shadcn/ui (New York style) + Vercel AI Elements
 - **Entry**: `src/main.tsx` → `src/App.tsx`
 - **Components**: Feature-based organization in `src/components/`
   - Each feature (Campaigns, Channels, Knowledge, etc.) has its own directory
-  - `GlobalAIAgent/` - AI assistant floating widget
+  - `GlobalAIAgent/` - AI assistant floating widget using AI Elements
+  - `ui/` - shadcn/ui base components (Button, Card, Dialog, Input, etc.)
+  - `ai-elements/` - Vercel AI Elements for chat UI (Message, Conversation, PromptInput, etc.)
 - **Services**: `src/services/` - API client (`api.ts`), conversation handling, analytics
 - **Data**: `src/data/` - Mock data files for conversations, contacts, tasks
+
+### UI Component Libraries
+
+**shadcn/ui** (`src/components/ui/`)
+Base UI components using Radix primitives with Tailwind CSS styling.
+- Configuration: `components.json`
+- CSS Variables: Defined in `src/index.css` using `@theme inline` for Tailwind v4
+- Style: New York variant
+- Add components: `npx shadcn@latest add <component>`
+
+**Vercel AI Elements** (`src/components/ai-elements/`)
+Pre-built components for AI chat interfaces, optimized for streaming responses.
+
+Key components:
+- `Conversation` / `ConversationContent` - Message list container with auto-scroll
+- `Message` / `MessageContent` / `MessageResponse` - Message rendering with markdown support
+- `MessageActions` / `MessageAction` - Copy, regenerate, and other message actions
+- `PromptInput` / `PromptInputTextarea` - Chat input with Enter-to-submit, paste support
+- `Suggestions` / `Suggestion` - Quick action suggestion pills
+- `Loader` - Animated loading spinner
+- `CodeBlock` / `CodeBlockCopyButton` - Syntax-highlighted code with copy functionality
+- `Sources` / `Source` - Citation/source display for RAG responses
+- `Reasoning` - Chain-of-thought display
+
+Add all AI Elements: `npx shadcn@latest add https://registry.ai-sdk.dev/all.json`
 
 ### API Worker (`workers/api/`)
 Main REST API and business logic.
@@ -142,6 +170,27 @@ Real-time voice AI for outbound calls using streaming STT/LLM/TTS.
 - Durable Objects use SQLite storage (see migrations in wrangler.toml)
 - Voice API requests are proxied from API Worker → Voice Worker via Service Binding
 - Voice sessions use WebSocket for real-time bidirectional audio streaming
+
+## Theming & Brand Colors
+
+CSS variables and Tailwind theme defined in `src/index.css`:
+
+**KeyReply Brand Colors** (available as Tailwind classes like `bg-key-blue`):
+- `key-blue`: #37CFFF - Primary brand cyan
+- `key-green`: #5DE530 - Success/accent green
+- `key-gray`: #565856 - Neutral gray
+- `key-navy`: #111722 - Dark background
+- `key-teal`: #34DBAE - Secondary teal
+- `key-deep-blue`: #1D57D8 - Primary action blue
+
+Each color has a full palette (50-900) for different shades.
+
+**shadcn/ui Theme Tokens** (CSS variables):
+- Light/dark mode support via `.dark` class
+- Standard tokens: `--background`, `--foreground`, `--primary`, `--secondary`, `--muted`, `--accent`, `--destructive`, `--border`, `--input`, `--ring`
+- Chart colors: `--chart-1` through `--chart-5`
+
+**Font**: Satoshi (loaded from Fontshare CDN) with Inter/system fallbacks
 
 ## RAG with AI Search
 

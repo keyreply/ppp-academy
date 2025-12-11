@@ -1,113 +1,154 @@
 # KeyReply Kira AI
 
-A modern React application built with Vite, featuring Hero Icons and Tailwind CSS.
+A modern AI-powered customer engagement platform built with React, TypeScript, and Cloudflare Workers.
 
 ## Features
 
-- ⚡️ React 19 with Vite for fast development
-- 🎨 Tailwind CSS 4 for styling
-- 🎯 Hero Icons for beautiful UI elements
-- 🚀 Cloudflare Pages deployment ready
+- **AI Chat Widget** - Streaming chat interface with RAG (Retrieval-Augmented Generation)
+- **Voice AI** - Real-time voice conversations with STT/LLM/TTS pipeline
+- **Multi-tenant** - Folder-based document isolation per tenant
+- **Modern UI** - shadcn/ui components + Vercel AI Elements for chat interfaces
+
+## Tech Stack
+
+- **Frontend**: React 19, Vite 7, TypeScript, Tailwind CSS 4
+- **UI Components**: shadcn/ui (New York style), Vercel AI Elements
+- **Backend**: Cloudflare Workers (Hono framework)
+- **Database**: Cloudflare D1 (SQLite), R2 (object storage)
+- **AI**: Cloudflare AI Search (RAG), Workers AI, Deepgram STT, Minimax TTS
+- **Deployment**: Cloudflare Pages + Workers
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ installed
-- npm or yarn package manager
+- [Bun](https://bun.sh/) runtime installed
+- Cloudflare account (for Workers deployment)
 
 ### Installation
 
-1. Clone the repository:
 ```bash
+# Clone the repository
 git clone https://github.com/keyreply/keyreply-kira-ai.git
 cd keyreply-kira-ai
+
+# Install dependencies
+bun install
+
+# Install worker dependencies
+cd workers/api && bun install && cd ../..
+cd workers/voice && bun install && cd ../..
 ```
 
-2. Install dependencies:
+### Development
+
 ```bash
-npm install
+# Start frontend dev server (localhost:5173)
+bun run dev
+
+# Start API worker dev server
+bun run api:dev
+
+# Start Voice worker dev server
+bun run voice:dev
+
+# Start all workers concurrently
+bun run workers:dev
 ```
 
-3. Start the development server:
+### Build & Deploy
+
 ```bash
-npm run dev
+# Build frontend
+bun run build
+
+# Deploy to Cloudflare Pages
+bun run deploy
+
+# Deploy workers
+bun run api:deploy
+bun run voice:deploy
 ```
-
-The application will be available at `http://localhost:5173`
-
-## Development
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build locally
-- `npm run lint` - Run ESLint
-
-## Deployment to Cloudflare Pages
-
-### Prerequisites
-
-1. Install Wrangler CLI (if not already installed):
-```bash
-brew install wrangler
-```
-
-2. Authenticate with Cloudflare:
-```bash
-wrangler login
-```
-
-### Deploy
-
-1. Build the application:
-```bash
-npm run build
-```
-
-2. Deploy to Cloudflare Pages:
-```bash
-npm run deploy
-```
-
-For preview deployments:
-```bash
-npm run deploy:preview
-```
-
-### Environment Variables
-
-If you need environment variables:
-
-1. Copy the example file:
-```bash
-cp .dev.vars.example .dev.vars
-```
-
-2. Add your variables to `.dev.vars` (for local development)
-3. Add production variables in the Cloudflare dashboard under Pages > Settings > Environment variables
 
 ## Project Structure
 
 ```
-keyreply-kira-ai/
+keyreply-kira/
 ├── src/
-│   ├── components/     # React components
-│   ├── data/          # Data files
-│   ├── utils/         # Utility functions
-│   ├── App.jsx        # Main application component
-│   └── main.jsx       # Application entry point
-├── public/            # Static assets
-└── dist/              # Production build (generated)
+│   ├── components/
+│   │   ├── ui/              # shadcn/ui base components
+│   │   ├── ai-elements/     # Vercel AI Elements for chat
+│   │   ├── GlobalAIAgent/   # AI assistant widget
+│   │   └── ...              # Feature components
+│   ├── services/            # API clients, services
+│   ├── data/                # Mock data
+│   └── lib/                 # Utilities (cn, etc.)
+├── workers/
+│   ├── api/                 # Main REST API worker
+│   │   ├── src/
+│   │   │   ├── routes/      # API endpoints
+│   │   │   ├── durable-objects/  # DO classes
+│   │   │   └── services/    # Business logic
+│   │   └── wrangler.toml
+│   └── voice/               # Voice AI worker
+│       ├── src/
+│       │   ├── agents/      # Voice agents
+│       │   ├── services/    # STT/TTS services
+│       │   └── handlers/    # WebSocket handlers
+│       └── wrangler.toml
+├── components.json          # shadcn/ui config
+└── .claude/CLAUDE.md        # Claude Code instructions
 ```
 
-## Tech Stack
+## UI Components
 
-- **Framework**: React 19
-- **Build Tool**: Vite 7
-- **Styling**: Tailwind CSS 4
-- **Icons**: Hero Icons
-- **Deployment**: Cloudflare Pages
-- **Linting**: ESLint
+### Adding shadcn/ui Components
+
+```bash
+npx shadcn@latest add button card dialog
+```
+
+### Adding AI Elements
+
+```bash
+# Add all AI Elements
+npx shadcn@latest add https://registry.ai-sdk.dev/all.json
+
+# Or add specific components
+npx shadcn@latest add https://registry.ai-sdk.dev/message.json
+```
+
+### Key AI Element Components
+
+- `Conversation` / `ConversationContent` - Message list with auto-scroll
+- `Message` / `MessageContent` / `MessageResponse` - Message rendering
+- `PromptInput` / `PromptInputTextarea` - Chat input with Enter-to-submit
+- `Suggestions` / `Suggestion` - Quick action pills
+- `CodeBlock` - Syntax-highlighted code blocks
+- `Sources` - RAG citation display
+
+## Environment Variables
+
+### Frontend (.env)
+```bash
+VITE_API_URL=http://localhost:8787  # API worker URL
+```
+
+### Workers (set via `wrangler secret put`)
+```bash
+# API Worker
+RESEND_API_KEY=...
+CLOUDFLARE_API_TOKEN=...
+
+# Voice Worker
+MINIMAX_API_KEY=...
+MINIMAX_GROUP_ID=...
+DEEPGRAM_API_KEY=...
+```
+
+## Documentation
+
+See [.claude/CLAUDE.md](.claude/CLAUDE.md) for detailed architecture documentation.
 
 ## License
 

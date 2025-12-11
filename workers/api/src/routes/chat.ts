@@ -1,8 +1,13 @@
 import { Hono } from 'hono';
+import { streamText } from 'ai';
+import { createWorkersAI } from 'workers-ai-provider';
 import { getUserId, getTenantId } from '../middleware/auth';
 
 // AI Search instance name
 const AI_SEARCH_INSTANCE = 'keyreply-kira-search';
+
+// Default model for chat
+const DEFAULT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
 // Knowledge source folders
 const KNOWLEDGE_SOURCES = {
@@ -235,6 +240,193 @@ chat.post('/search', async (c) => {
     console.error('Search endpoint error:', error);
     return c.json({
       error: 'Search failed',
+      details: (error as Error).message
+    }, 500);
+  }
+});
+
+/**
+ * POST /chat/stream
+ * Streaming chat endpoint compatible with AI SDK useChat hook
+ *
+ * This endpoint receives messages in the AI SDK format and returns
+ * a streaming response using Server-Sent Events (SSE).
+ *
+ * Request body:
+ * - messages: Array of { role: 'user' | 'assistant', content: string }
+ * - context?: string - Current page context
+ * - knowledgeSource?: 'user' | 'self' | 'all'
+ */
+chat.post('/stream', async (c) => {
+  const userId = getUserId(c);
+  const tenantId = getTenantId(c) || `user_${userId}`;
+  const body = await c.req.json();
+
+  const {
+    messages,
+    context,
+    knowledgeSource = 'all'
+  } = body as {
+    messages: Array<{ id: string; role: 'user' | 'assistant' | 'system'; content?: string; parts?: Array<{ type: string; text?: string }> }>;
+    context?: string;
+    knowledgeSource?: KnowledgeSource;
+  };
+
+  if (!messages || messages.length === 0) {
+    return c.json({ error: 'Messages are required' }, 400);
+  }
+
+  // Validate knowledge source
+  const validSources: KnowledgeSource[] = ['user', 'self', 'all'];
+  const source: KnowledgeSource = validSources.includes(knowledgeSource) ? knowledgeSource : 'all';
+
+  try {
+    // Get the last user message for RAG context retrieval
+    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+    // In AI SDK v6, message content can be string (legacy) or parts array
+    let userQuery = '';
+    if (lastUserMessage) {
+      if (typeof lastUserMessage.content === 'string') {
+        userQuery = lastUserMessage.content;
+      } else if (lastUserMessage.parts && Array.isArray(lastUserMessage.parts)) {
+        // Extract text from parts
+        userQuery = lastUserMessage.parts
+          .filter((p: { type: string }) => p.type === 'text')
+          .map((p: { type: string; text?: string }) => p.text || '')
+          .join(' ');
+      }
+    }
+
+    // Step 1: Retrieve relevant context using AI Search
+    let ragContext = '';
+    let sources: Array<{ documentName: string; score: number; preview: string }> = [];
+
+    if (userQuery) {
+      try {
+        const autorag = c.env.AI.autorag(AI_SEARCH_INSTANCE);
+        const filter = buildFolderFilter(source, tenantId);
+
+        const searchOptions: {
+          query: string;
+          max_num_results?: number;
+          filters?: unknown;
+        } = {
+          query: userQuery,
+          max_num_results: 5
+        };
+
+        if (filter) {
+          searchOptions.filters = filter;
+        }
+
+        const searchResponse = await autorag.search(searchOptions);
+
+        // Build RAG context from search results
+        if (searchResponse.data && searchResponse.data.length > 0) {
+          sources = searchResponse.data.map(result => ({
+            score: result.score,
+            documentName: result.filename.split('/').pop() || result.filename,
+            preview: result.content?.[0]?.text?.substring(0, 150) || ''
+          })).filter(s => s.score > 0.5);
+
+          // Build context string from relevant documents
+          ragContext = searchResponse.data
+            .filter(r => r.score > 0.5)
+            .map(r => {
+              const docName = r.filename.split('/').pop() || r.filename;
+              const content = r.content.map(c => c.text).join('\n');
+              return `[Document: ${docName}]\n${content}`;
+            })
+            .join('\n\n---\n\n');
+        }
+      } catch (ragError) {
+        console.error('RAG retrieval error:', ragError);
+        // Continue without RAG context if retrieval fails
+      }
+    }
+
+    // Step 2: Build system prompt with RAG context
+    const sourceDescription = source === 'self'
+      ? "Kira's own documentation and codebase knowledge"
+      : source === 'all'
+        ? "both your personal knowledge base and Kira's documentation"
+        : "your personal knowledge base";
+
+    let systemPrompt = `You are Kira, an intelligent AI assistant for KeyReply Kira.
+
+Your role is to help users by providing accurate, helpful responses based on ${sourceDescription}.
+
+KNOWLEDGE SOURCE: ${source === 'self' ? 'Kira Self-Documentation' : source === 'all' ? 'All Sources' : 'User Documents'}
+
+INSTRUCTIONS:
+- Be professional, concise, and helpful
+- Format responses with markdown when appropriate
+- If you're unsure about something, say so clearly
+${source === 'self' ? '- When answering about Kira features, be specific about implementation details\n- Reference file paths when discussing code structure' : ''}
+
+CURRENT PAGE CONTEXT: ${context || 'General'}`;
+
+    // Add RAG context if available
+    if (ragContext) {
+      systemPrompt += `
+
+RELEVANT KNOWLEDGE BASE CONTEXT:
+The following documents from the knowledge base may be relevant to the user's question:
+
+${ragContext}
+
+Use this context to provide accurate answers. If the context doesn't contain relevant information, you can still answer based on your general knowledge but indicate this to the user.`;
+    }
+
+    // Step 3: Create WorkersAI provider and stream response
+    const workersai = createWorkersAI({ binding: c.env.AI });
+
+    // Convert messages to the format expected by streamText
+    // Supporting both legacy content format and new parts format
+    const modelMessages = messages.map(msg => {
+      let content = '';
+      if (typeof msg.content === 'string') {
+        content = msg.content;
+      } else if (msg.parts && Array.isArray(msg.parts)) {
+        content = msg.parts
+          .filter(p => p.type === 'text')
+          .map(p => p.text || '')
+          .join(' ');
+      }
+      return {
+        role: msg.role as 'user' | 'assistant' | 'system',
+        content
+      };
+    });
+
+    const result = await streamText({
+      model: workersai(DEFAULT_MODEL),
+      system: systemPrompt,
+      messages: modelMessages,
+      onFinish: async ({ text, usage }) => {
+        console.log('Chat stream completed:', {
+          userId,
+          tenantId,
+          knowledgeSource: source,
+          sourcesCount: sources.length,
+          usage
+        });
+      }
+    });
+
+    // Return streaming response compatible with useChat
+    // In AI SDK v6, use toUIMessageStreamResponse for useChat compatibility
+    return result.toUIMessageStreamResponse({
+      headers: {
+        'X-Knowledge-Source': source,
+        'X-Sources-Count': sources.length.toString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Chat stream error:', error);
+    return c.json({
+      error: 'Failed to generate streaming response',
       details: (error as Error).message
     }, 500);
   }
