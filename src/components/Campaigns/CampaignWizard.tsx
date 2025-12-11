@@ -78,7 +78,7 @@ export default function CampaignWizard({ onClose }: CampaignWizardProps) {
                                 type="text"
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-200 rounded-xl text-white placeholder-[#565856] focus:outline-none focus:border-[#37CFFF]/50 focus:ring-1 focus:ring-[#37CFFF]/25 transition-all"
+                                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1D57D8] focus:ring-2 focus:ring-[#1D57D8]/10 transition-all"
                                 placeholder="e.g. Q4 Product Update"
                             />
                         </div>
@@ -92,18 +92,18 @@ export default function CampaignWizard({ onClose }: CampaignWizardProps) {
                                         onClick={() => setFormData({ ...formData, type: channel.value as FormData['type'] })}
                                         className={`relative p-4 rounded-xl border-2 transition-all ${
                                             formData.type === channel.value
-                                                ? 'border-[#37CFFF] bg-[#37CFFF]/10'
-                                                : 'border-slate-200 bg-white/30 hover:border-slate-200'
+                                                ? 'border-[#1D57D8] bg-blue-50'
+                                                : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                                         }`}
                                     >
                                         <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${channel.color} flex items-center justify-center mx-auto mb-2 shadow-lg`}>
                                             <channel.icon className="w-5 h-5 text-white" />
                                         </div>
-                                        <span className={`text-sm font-medium ${formData.type === channel.value ? 'text-white' : 'text-slate-500'}`}>
+                                        <span className={`text-sm font-medium ${formData.type === channel.value ? 'text-[#1D57D8]' : 'text-slate-600'}`}>
                                             {channel.label}
                                         </span>
                                         {formData.type === channel.value && (
-                                            <div className="absolute top-2 right-2 w-5 h-5 bg-[#37CFFF] rounded-full flex items-center justify-center">
+                                            <div className="absolute top-2 right-2 w-5 h-5 bg-[#1D57D8] rounded-full flex items-center justify-center">
                                                 <CheckIcon className="w-3 h-3 text-white" />
                                             </div>
                                         )}
@@ -125,27 +125,27 @@ export default function CampaignWizard({ onClose }: CampaignWizardProps) {
                                     onClick={() => setFormData({ ...formData, audience: audience.value })}
                                     className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
                                         formData.audience === audience.value
-                                            ? 'border-[#37CFFF] bg-[#37CFFF]/10'
-                                            : 'border-slate-200 bg-white/30 hover:border-slate-200'
+                                            ? 'border-[#1D57D8] bg-blue-50'
+                                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                                     }`}
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                                             formData.audience === audience.value
-                                                ? 'bg-[#37CFFF]/20'
-                                                : 'bg-[#2b303d]'
+                                                ? 'bg-[#1D57D8]/10'
+                                                : 'bg-slate-100'
                                         }`}>
                                             <audience.icon className={`w-6 h-6 ${
-                                                formData.audience === audience.value ? 'text-[#37CFFF]' : 'text-slate-500'
+                                                formData.audience === audience.value ? 'text-[#1D57D8]' : 'text-slate-500'
                                             }`} />
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex items-center justify-between mb-1">
-                                                <span className={`font-medium ${formData.audience === audience.value ? 'text-white' : 'text-slate-500'}`}>
+                                                <span className={`font-medium ${formData.audience === audience.value ? 'text-[#1D57D8]' : 'text-slate-900'}`}>
                                                     {audience.label}
                                                 </span>
                                                 <span className={`text-sm font-semibold ${
-                                                    formData.audience === audience.value ? 'text-[#37CFFF]' : 'text-slate-500'
+                                                    formData.audience === audience.value ? 'text-[#1D57D8]' : 'text-slate-600'
                                                 }`}>
                                                     {audience.count}
                                                 </span>
@@ -153,7 +153,7 @@ export default function CampaignWizard({ onClose }: CampaignWizardProps) {
                                             <p className="text-xs text-slate-500">{audience.description}</p>
                                         </div>
                                         {formData.audience === audience.value && (
-                                            <div className="w-5 h-5 bg-[#37CFFF] rounded-full flex items-center justify-center">
+                                            <div className="w-5 h-5 bg-[#1D57D8] rounded-full flex items-center justify-center">
                                                 <CheckIcon className="w-3 h-3 text-white" />
                                             </div>
                                         )}
@@ -166,12 +166,12 @@ export default function CampaignWizard({ onClose }: CampaignWizardProps) {
             case 3:
                 return (
                     <div className="space-y-4">
-                        <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-200 space-y-4">
-                            <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+                        <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+                            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                                 <span className="text-sm text-slate-500">Campaign Name</span>
-                                <span className="font-medium text-white">{formData.name || 'Untitled'}</span>
+                                <span className="font-medium text-slate-900">{formData.name || 'Untitled'}</span>
                             </div>
-                            <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+                            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                                 <span className="text-sm text-slate-500">Channel</span>
                                 <div className="flex items-center gap-2">
                                     {selectedChannel && (
@@ -179,21 +179,21 @@ export default function CampaignWizard({ onClose }: CampaignWizardProps) {
                                             <selectedChannel.icon className="w-3.5 h-3.5 text-white" />
                                         </div>
                                     )}
-                                    <span className="font-medium text-white capitalize">{formData.type}</span>
+                                    <span className="font-medium text-slate-900 capitalize">{formData.type}</span>
                                 </div>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-sm text-slate-500">Target Audience</span>
                                 <div className="flex items-center gap-2">
-                                    <span className="font-medium text-white">{selectedAudience?.label}</span>
-                                    <span className="text-xs text-[#37CFFF] bg-[#37CFFF]/10 px-2 py-0.5 rounded-full">
+                                    <span className="font-medium text-slate-900">{selectedAudience?.label}</span>
+                                    <span className="text-xs text-[#1D57D8] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
                                         {selectedAudience?.count}
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-gradient-to-r from-[#37CFFF]/10 to-[#37CFFF]/10 p-4 rounded-xl border border-[#37CFFF]/20">
-                            <p className="text-sm text-slate-500 text-center">
+                        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-xl border border-blue-100">
+                            <p className="text-sm text-slate-600 text-center">
                                 Ready to launch? This will create a draft campaign ready for review.
                             </p>
                         </div>
@@ -209,32 +209,32 @@ export default function CampaignWizard({ onClose }: CampaignWizardProps) {
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] border border-slate-200">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-                    <h2 className="text-lg font-semibold text-white">Create Campaign</h2>
-                    <button onClick={onClose} className="p-1.5 text-slate-500 hover:text-white hover:bg-slate-200 rounded-lg transition-colors">
+                    <h2 className="text-lg font-semibold text-slate-900">Create Campaign</h2>
+                    <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
                         <XMarkIcon className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Steps */}
-                <div className="bg-slate-900/30 px-6 py-4 border-b border-slate-200">
+                <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
                     <div className="flex items-center justify-between">
                         {STEPS.map((step, idx) => (
                             <div key={step.id} className="flex items-center">
                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-medium transition-all ${
                                     currentStep >= step.id
                                         ? 'bg-gradient-to-br from-[#1D57D8] to-[#37CFFF] text-white shadow-lg shadow-[#37CFFF]/25'
-                                        : 'bg-[#2b303d] text-slate-500'
+                                        : 'bg-slate-200 text-slate-500'
                                 }`}>
                                     {currentStep > step.id ? <CheckIcon className="w-4 h-4" /> : step.id}
                                 </div>
                                 <span className={`ml-2 text-sm font-medium hidden sm:inline ${
-                                    currentStep >= step.id ? 'text-white' : 'text-slate-500'
+                                    currentStep >= step.id ? 'text-slate-900' : 'text-slate-500'
                                 }`}>
                                     {step.name}
                                 </span>
                                 {idx < STEPS.length - 1 && (
                                     <div className={`w-8 sm:w-12 h-0.5 mx-2 rounded-full transition-colors ${
-                                        currentStep > step.id ? 'bg-[#1D57D8]' : 'bg-[#2b303d]'
+                                        currentStep > step.id ? 'bg-[#1D57D8]' : 'bg-slate-200'
                                     }`} />
                                 )}
                             </div>
@@ -248,10 +248,10 @@ export default function CampaignWizard({ onClose }: CampaignWizardProps) {
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 border-t border-slate-200 flex justify-between">
+                <div className="px-6 py-4 border-t border-slate-200 flex justify-between bg-slate-50">
                     <button
                         onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
-                        className={`px-4 py-2.5 text-sm font-medium text-slate-500 bg-[#2b303d] border border-slate-200 rounded-xl hover:bg-slate-200 transition-all ${
+                        className={`px-4 py-2.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all ${
                             currentStep === 1 ? 'invisible' : ''
                         }`}
                     >

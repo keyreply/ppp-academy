@@ -54,6 +54,9 @@ import { trackApiUsage } from './middleware/auth.ts';
 // Create main Hono app with typed environment
 const app = new Hono<HonoEnv>();
 
+// Create v1 API router - all API routes are namespaced under /v1
+const v1 = new Hono<HonoEnv>();
+
 // ============================================
 // Global Middleware
 // ============================================
@@ -87,74 +90,74 @@ app.use('*', cors({
 app.use('*', logger());
 
 // API usage tracking middleware (for authenticated routes)
-app.use('/tenants/*', trackApiUsage);
-app.use('/customers/*', trackApiUsage);
-app.use('/conversations/*', trackApiUsage);
-app.use('/agents/*', trackApiUsage);
-app.use('/notifications/*', trackApiUsage);
-app.use('/documents/*', trackApiUsage);
-app.use('/emails/*', trackApiUsage);
-app.use('/stt/*', trackApiUsage);
+v1.use('/tenants/*', trackApiUsage);
+v1.use('/customers/*', trackApiUsage);
+v1.use('/conversations/*', trackApiUsage);
+v1.use('/agents/*', trackApiUsage);
+v1.use('/notifications/*', trackApiUsage);
+v1.use('/documents/*', trackApiUsage);
+v1.use('/emails/*', trackApiUsage);
+v1.use('/stt/*', trackApiUsage);
 
 // ============================================
-// Health Check
+// Health Check (available at root and /v1)
 // ============================================
 
-app.get('/', (c) => {
-  return c.json({
-    name: 'KeyReply Kira AI API',
-    version: '1.0.0',
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    environment: c.env.ENVIRONMENT || 'development'
-  });
+const healthResponse = (c: any) => c.json({
+  name: 'KeyReply Kira AI API',
+  version: '1.0.0',
+  status: 'healthy',
+  timestamp: new Date().toISOString(),
+  environment: c.env.ENVIRONMENT || 'development'
 });
 
-app.get('/health', (c) => {
-  return c.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    checks: {
-      database: 'ok',
-      storage: 'ok',
-      ai: 'ok'
-    }
-  });
+const healthCheckResponse = (c: any) => c.json({
+  status: 'healthy',
+  timestamp: new Date().toISOString(),
+  checks: {
+    database: 'ok',
+    storage: 'ok',
+    ai: 'ok'
+  }
 });
 
+// Root health check
+app.get('/', healthResponse);
+app.get('/health', healthCheckResponse);
+
+// V1 health check
+v1.get('/', healthResponse);
+v1.get('/health', healthCheckResponse);
+
 // ============================================
-// Mount Route Modules
+// Mount Route Modules under /v1
 // ============================================
 
-app.route('/tenants', tenantsRouter);
-app.route('/customers', customersRouter);
-app.route('/conversations', conversationsRouter);
-app.route('/agents', agentsRouter);
-app.route('/notifications', notificationsRouter);
-app.route('/documents', documentsRouter);
-app.route('/emails', emailsRouter); // Original emails route if it existed, otherwise can replace
-// Ideally we should use the new emailRouter
-// But line 114 already had `app.route('/emails', emailsRouter);`
-// Let's check line 19 which was `import emailsRouter from './routes/emails.js';`
-// I added `import emailRouter from './routes/email.js';` in previous step.
-// I should replace the route mount to use the new router.
-app.route('/email', emailRouter);
-app.route('/stt', sttRouter);
-app.route('/chat', chatRouter);
-app.route('/upload', uploadRouter);
-app.route('/campaigns', campaignsRouter);
-app.route('/workflows', workflowsRouter);
-app.route('/channels', channelsRouter);
-app.route('/functions', functionRouter);
-app.route('/voice', voiceRouter);
-
-// Mount analytics route
-app.route('/analytics', analyticsRouter);
+v1.route('/tenants', tenantsRouter);
+v1.route('/customers', customersRouter);
+v1.route('/conversations', conversationsRouter);
+v1.route('/agents', agentsRouter);
+v1.route('/notifications', notificationsRouter);
+v1.route('/documents', documentsRouter);
+v1.route('/emails', emailsRouter);
+v1.route('/email', emailRouter);
+v1.route('/stt', sttRouter);
+v1.route('/chat', chatRouter);
+v1.route('/upload', uploadRouter);
+v1.route('/campaigns', campaignsRouter);
+v1.route('/workflows', workflowsRouter);
+v1.route('/channels', channelsRouter);
+v1.route('/functions', functionRouter);
+v1.route('/voice', voiceRouter);
+v1.route('/analytics', analyticsRouter);
 
 // AI Models endpoint
-app.get('/ai/models', (c) => {
+v1.get('/ai/models', (c) => {
   return c.json(getAllModels());
 });
+
+// Mount v1 router
+app.route('/v1', v1);
 
 // ============================================
 // Error Handling

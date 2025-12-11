@@ -3,6 +3,12 @@ main = "src/index.ts"
 compatibility_date = "2025-11-27"
 account_id = "2e25a3c929c0317b8c569a9e7491cf78"
 
+# Route pattern for custom domain
+# API is accessible at https://kira.keyreply.com/v1/*
+routes = [
+  { pattern = "kira.keyreply.com/v1/*", zone_name = "keyreply.com" }
+]
+
 # ============================================
 # Durable Object bindings
 # ============================================

@@ -11,7 +11,13 @@ import type {
   Channel,
 } from '../types/index.ts';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+// Determine API URL based on environment
+// In production (Cloudflare Pages), use the custom domain with /v1 namespace
+// In development, use localhost
+const API_BASE_URL = import.meta.env.VITE_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? 'https://kira.keyreply.com/v1'
+    : 'http://localhost:8787');
 
 // Request options type
 interface RequestOptions extends RequestInit {
