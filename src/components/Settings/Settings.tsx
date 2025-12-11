@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Cog6ToothIcon,
     UserCircleIcon,
@@ -8,7 +8,8 @@ import {
     KeyIcon,
     GlobeAltIcon,
     PaintBrushIcon,
-    CheckIcon
+    CheckIcon,
+    ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 
 type SectionId = 'general' | 'profile' | 'notifications' | 'security' | 'billing';
@@ -28,13 +29,203 @@ const SECTIONS: Section[] = [
     { id: 'billing', label: 'Billing', icon: CreditCardIcon, description: 'Subscription & payments' },
 ];
 
+// Toggle Switch Component
+interface ToggleSwitchProps {
+    enabled: boolean;
+    onChange: (enabled: boolean) => void;
+    disabled?: boolean;
+}
+
+function ToggleSwitch({ enabled, onChange, disabled = false }: ToggleSwitchProps) {
+    return (
+        <button
+            type="button"
+            role="switch"
+            aria-checked={enabled}
+            disabled={disabled}
+            onClick={() => !disabled && onChange(!enabled)}
+            className={`w-12 h-6 rounded-full relative transition-colors ${
+                enabled ? 'bg-indigo-500' : 'bg-slate-200'
+            } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        >
+            <span
+                className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                    enabled ? 'right-1' : 'left-1'
+                }`}
+            />
+        </button>
+    );
+}
+
+// Settings state interfaces
+interface GeneralSettings {
+    organizationName: string;
+    timezone: string;
+    language: string;
+    darkMode: boolean;
+    compactView: boolean;
+}
+
+interface ProfileSettings {
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+}
+
+interface NotificationSettings {
+    emailNotifications: boolean;
+    pushNotifications: boolean;
+    campaignAlerts: boolean;
+    weeklyDigest: boolean;
+    marketingUpdates: boolean;
+}
+
+interface SecuritySettings {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+    twoFactorEnabled: boolean;
+}
+
+// Load settings from localStorage or use defaults
+function loadSettings<T>(key: string, defaults: T): T {
+    try {
+        const stored = localStorage.getItem(`settings_${key}`);
+        if (stored) {
+            return { ...defaults, ...JSON.parse(stored) };
+        }
+    } catch (e) {
+        console.error('Failed to load settings:', e);
+    }
+    return defaults;
+}
+
+// Save settings to localStorage
+function saveSettings<T>(key: string, settings: T): void {
+    try {
+        localStorage.setItem(`settings_${key}`, JSON.stringify(settings));
+    } catch (e) {
+        console.error('Failed to save settings:', e);
+    }
+}
+
 export default function Settings() {
     const [activeSection, setActiveSection] = useState<SectionId>('general');
     const [saved, setSaved] = useState(false);
+    const [hasChanges, setHasChanges] = useState(false);
+    const [passwordError, setPasswordError] = useState<string | null>(null);
 
+    // Settings state
+    const [general, setGeneral] = useState<GeneralSettings>(() =>
+        loadSettings('general', {
+            organizationName: 'Acme Corp',
+            timezone: 'sgt',
+            language: 'en',
+            darkMode: false,
+            compactView: false
+        })
+    );
+
+    const [profile, setProfile] = useState<ProfileSettings>(() =>
+        loadSettings('profile', {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john.doe@acmecorp.com',
+            role: 'Administrator'
+        })
+    );
+
+    const [notifications, setNotifications] = useState<NotificationSettings>(() =>
+        loadSettings('notifications', {
+            emailNotifications: true,
+            pushNotifications: true,
+            campaignAlerts: true,
+            weeklyDigest: false,
+            marketingUpdates: false
+        })
+    );
+
+    const [security, setSecurity] = useState<SecuritySettings>({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+        twoFactorEnabled: false
+    });
+
+    // Track changes
+    useEffect(() => {
+        setHasChanges(true);
+    }, [general, profile, notifications, security.twoFactorEnabled]);
+
+    // Update general settings
+    const updateGeneral = (key: keyof GeneralSettings, value: string | boolean) => {
+        setGeneral(prev => ({ ...prev, [key]: value }));
+    };
+
+    // Update profile settings
+    const updateProfile = (key: keyof ProfileSettings, value: string) => {
+        setProfile(prev => ({ ...prev, [key]: value }));
+    };
+
+    // Update notification settings
+    const updateNotifications = (key: keyof NotificationSettings, value: boolean) => {
+        setNotifications(prev => ({ ...prev, [key]: value }));
+    };
+
+    // Update security settings
+    const updateSecurity = (key: keyof SecuritySettings, value: string | boolean) => {
+        setSecurity(prev => ({ ...prev, [key]: value }));
+        if (key === 'newPassword' || key === 'confirmPassword') {
+            setPasswordError(null);
+        }
+    };
+
+    // Validate password
+    const validatePassword = (): boolean => {
+        if (security.newPassword && security.newPassword.length < 8) {
+            setPasswordError('Password must be at least 8 characters');
+            return false;
+        }
+        if (security.newPassword !== security.confirmPassword) {
+            setPasswordError('Passwords do not match');
+            return false;
+        }
+        return true;
+    };
+
+    // Handle save
     const handleSave = () => {
+        // Validate password if changed
+        if (security.newPassword || security.confirmPassword) {
+            if (!validatePassword()) return;
+        }
+
+        // Save all settings
+        saveSettings('general', general);
+        saveSettings('profile', profile);
+        saveSettings('notifications', notifications);
+        // Don't save passwords to localStorage for security
+
+        // Show saved feedback
         setSaved(true);
+        setHasChanges(false);
         setTimeout(() => setSaved(false), 2000);
+
+        // Clear password fields after save
+        setSecurity(prev => ({
+            ...prev,
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+        }));
+    };
+
+    // Get initials for avatar
+    const getInitials = () => {
+        const first = profile.firstName.charAt(0).toUpperCase();
+        const last = profile.lastName.charAt(0).toUpperCase();
+        return `${first}${last}`;
     };
 
     const renderContent = () => {
@@ -50,24 +241,39 @@ export default function Settings() {
                                     <input
                                         type="text"
                                         className="w-full max-w-md px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
-                                        defaultValue="Acme Corp"
+                                        value={general.organizationName}
+                                        onChange={(e) => updateGeneral('organizationName', e.target.value)}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-600 mb-2">Timezone</label>
-                                    <select className="w-full max-w-md px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all">
+                                    <select
+                                        className="w-full max-w-md px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+                                        value={general.timezone}
+                                        onChange={(e) => updateGeneral('timezone', e.target.value)}
+                                    >
                                         <option value="utc">UTC (GMT+00:00)</option>
                                         <option value="pst">Pacific Time (GMT-08:00)</option>
                                         <option value="est">Eastern Time (GMT-05:00)</option>
                                         <option value="sgt">Singapore Time (GMT+08:00)</option>
+                                        <option value="jst">Japan Time (GMT+09:00)</option>
+                                        <option value="gmt">London (GMT+00:00)</option>
+                                        <option value="cet">Central Europe (GMT+01:00)</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-600 mb-2">Language</label>
-                                    <select className="w-full max-w-md px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all">
+                                    <select
+                                        className="w-full max-w-md px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+                                        value={general.language}
+                                        onChange={(e) => updateGeneral('language', e.target.value)}
+                                    >
                                         <option value="en">English</option>
                                         <option value="es">Spanish</option>
-                                        <option value="zh">Chinese</option>
+                                        <option value="zh">Chinese (Simplified)</option>
+                                        <option value="zh-tw">Chinese (Traditional)</option>
+                                        <option value="ja">Japanese</option>
+                                        <option value="ko">Korean</option>
                                     </select>
                                 </div>
                             </div>
@@ -89,18 +295,20 @@ export default function Settings() {
                                         <span className="text-sm font-medium text-slate-700">Dark Mode</span>
                                         <p className="text-xs text-slate-500">Use dark theme throughout the app</p>
                                     </div>
-                                    <button className="w-12 h-6 bg-indigo-500 rounded-full relative transition-colors">
-                                        <span className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-all" />
-                                    </button>
+                                    <ToggleSwitch
+                                        enabled={general.darkMode}
+                                        onChange={(enabled) => updateGeneral('darkMode', enabled)}
+                                    />
                                 </div>
                                 <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
                                     <div>
                                         <span className="text-sm font-medium text-slate-700">Compact View</span>
                                         <p className="text-xs text-slate-500">Show more items with less spacing</p>
                                     </div>
-                                    <button className="w-12 h-6 bg-slate-200 rounded-full relative transition-colors">
-                                        <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-all" />
-                                    </button>
+                                    <ToggleSwitch
+                                        enabled={general.compactView}
+                                        onChange={(enabled) => updateGeneral('compactView', enabled)}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -113,7 +321,7 @@ export default function Settings() {
                         <h2 className="text-lg font-semibold text-slate-800 mb-6">Profile Settings</h2>
                         <div className="flex items-start gap-6 mb-6">
                             <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                                JD
+                                {getInitials()}
                             </div>
                             <div className="flex-1">
                                 <button className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm hover:bg-slate-50 transition-all">
@@ -129,7 +337,8 @@ export default function Settings() {
                                     <input
                                         type="text"
                                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
-                                        defaultValue="John"
+                                        value={profile.firstName}
+                                        onChange={(e) => updateProfile('firstName', e.target.value)}
                                     />
                                 </div>
                                 <div>
@@ -137,7 +346,8 @@ export default function Settings() {
                                     <input
                                         type="text"
                                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
-                                        defaultValue="Doe"
+                                        value={profile.lastName}
+                                        onChange={(e) => updateProfile('lastName', e.target.value)}
                                     />
                                 </div>
                             </div>
@@ -146,7 +356,8 @@ export default function Settings() {
                                 <input
                                     type="email"
                                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
-                                    defaultValue="john.doe@acmecorp.com"
+                                    value={profile.email}
+                                    onChange={(e) => updateProfile('email', e.target.value)}
                                 />
                             </div>
                             <div>
@@ -154,9 +365,10 @@ export default function Settings() {
                                 <input
                                     type="text"
                                     className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed"
-                                    defaultValue="Administrator"
+                                    value={profile.role}
                                     disabled
                                 />
+                                <p className="text-xs text-slate-400 mt-1">Role can only be changed by administrators</p>
                             </div>
                         </div>
                     </div>
@@ -167,23 +379,56 @@ export default function Settings() {
                     <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                         <h2 className="text-lg font-semibold text-slate-800 mb-6">Notification Preferences</h2>
                         <div className="space-y-4">
-                            {[
-                                { label: 'Email Notifications', description: 'Receive updates via email', enabled: true },
-                                { label: 'Push Notifications', description: 'Get browser notifications', enabled: true },
-                                { label: 'Campaign Alerts', description: 'Notify when campaigns complete', enabled: true },
-                                { label: 'Weekly Digest', description: 'Summary of weekly activity', enabled: false },
-                                { label: 'Marketing Updates', description: 'News about new features', enabled: false },
-                            ].map((item, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-                                    <div>
-                                        <span className="text-sm font-medium text-slate-700">{item.label}</span>
-                                        <p className="text-xs text-slate-500">{item.description}</p>
-                                    </div>
-                                    <button className={`w-12 h-6 rounded-full relative transition-colors ${item.enabled ? 'bg-indigo-500' : 'bg-slate-200'}`}>
-                                        <span className={`absolute top-1 w-4 h-4 rounded-full shadow transition-all ${item.enabled ? 'right-1 bg-white' : 'left-1 bg-white'}`} />
-                                    </button>
+                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                <div>
+                                    <span className="text-sm font-medium text-slate-700">Email Notifications</span>
+                                    <p className="text-xs text-slate-500">Receive updates via email</p>
                                 </div>
-                            ))}
+                                <ToggleSwitch
+                                    enabled={notifications.emailNotifications}
+                                    onChange={(enabled) => updateNotifications('emailNotifications', enabled)}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                <div>
+                                    <span className="text-sm font-medium text-slate-700">Push Notifications</span>
+                                    <p className="text-xs text-slate-500">Get browser notifications</p>
+                                </div>
+                                <ToggleSwitch
+                                    enabled={notifications.pushNotifications}
+                                    onChange={(enabled) => updateNotifications('pushNotifications', enabled)}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                <div>
+                                    <span className="text-sm font-medium text-slate-700">Campaign Alerts</span>
+                                    <p className="text-xs text-slate-500">Notify when campaigns complete</p>
+                                </div>
+                                <ToggleSwitch
+                                    enabled={notifications.campaignAlerts}
+                                    onChange={(enabled) => updateNotifications('campaignAlerts', enabled)}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                <div>
+                                    <span className="text-sm font-medium text-slate-700">Weekly Digest</span>
+                                    <p className="text-xs text-slate-500">Summary of weekly activity</p>
+                                </div>
+                                <ToggleSwitch
+                                    enabled={notifications.weeklyDigest}
+                                    onChange={(enabled) => updateNotifications('weeklyDigest', enabled)}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                <div>
+                                    <span className="text-sm font-medium text-slate-700">Marketing Updates</span>
+                                    <p className="text-xs text-slate-500">News about new features</p>
+                                </div>
+                                <ToggleSwitch
+                                    enabled={notifications.marketingUpdates}
+                                    onChange={(enabled) => updateNotifications('marketingUpdates', enabled)}
+                                />
+                            </div>
                         </div>
                     </div>
                 );
@@ -208,24 +453,40 @@ export default function Settings() {
                                         type="password"
                                         className="w-full max-w-md px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
                                         placeholder="Enter current password"
+                                        value={security.currentPassword}
+                                        onChange={(e) => updateSecurity('currentPassword', e.target.value)}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-600 mb-2">New Password</label>
                                     <input
                                         type="password"
-                                        className="w-full max-w-md px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
-                                        placeholder="Enter new password"
+                                        className={`w-full max-w-md px-4 py-3 bg-slate-50 border rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${
+                                            passwordError ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : 'border-slate-200 focus:border-indigo-400 focus:ring-indigo-100'
+                                        }`}
+                                        placeholder="Enter new password (min. 8 characters)"
+                                        value={security.newPassword}
+                                        onChange={(e) => updateSecurity('newPassword', e.target.value)}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-600 mb-2">Confirm New Password</label>
                                     <input
                                         type="password"
-                                        className="w-full max-w-md px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+                                        className={`w-full max-w-md px-4 py-3 bg-slate-50 border rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${
+                                            passwordError ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : 'border-slate-200 focus:border-indigo-400 focus:ring-indigo-100'
+                                        }`}
                                         placeholder="Confirm new password"
+                                        value={security.confirmPassword}
+                                        onChange={(e) => updateSecurity('confirmPassword', e.target.value)}
                                     />
                                 </div>
+                                {passwordError && (
+                                    <div className="flex items-center gap-2 text-red-600 text-sm">
+                                        <ExclamationCircleIcon className="w-4 h-4" />
+                                        {passwordError}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -244,9 +505,24 @@ export default function Settings() {
                                     <span className="text-sm font-medium text-slate-700">Enable 2FA</span>
                                     <p className="text-xs text-slate-500">Use authenticator app for login</p>
                                 </div>
-                                <button className="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm hover:bg-indigo-600 transition-all shadow-sm">
-                                    Enable
-                                </button>
+                                {security.twoFactorEnabled ? (
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs text-emerald-600 font-medium">Enabled</span>
+                                        <button
+                                            onClick={() => updateSecurity('twoFactorEnabled', false)}
+                                            className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm hover:bg-red-100 transition-all"
+                                        >
+                                            Disable
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => updateSecurity('twoFactorEnabled', true)}
+                                        className="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm hover:bg-indigo-600 transition-all shadow-sm"
+                                    >
+                                        Enable
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -381,7 +657,10 @@ export default function Settings() {
                         {renderContent()}
 
                         {/* Save Button */}
-                        <div className="mt-6 flex justify-end">
+                        <div className="mt-6 flex items-center justify-end gap-4">
+                            {hasChanges && !saved && (
+                                <span className="text-sm text-slate-500">You have unsaved changes</span>
+                            )}
                             <button
                                 onClick={handleSave}
                                 className={`px-6 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
