@@ -18,7 +18,8 @@ export type ViewType =
   | 'testing'
   | 'widget'
   | 'settings'
-  | 'contacts';
+  | 'contacts'
+  | 'logo-demo';
 
 export type InteractionMode = 'interactive' | 'demo';
 

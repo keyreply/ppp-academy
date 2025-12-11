@@ -9,9 +9,11 @@ import {
     MegaphoneIcon,
     BoltIcon,
     BeakerIcon,
-    ArrowRightStartOnRectangleIcon
+    ArrowRightStartOnRectangleIcon,
+    SparklesIcon
 } from '@heroicons/react/24/outline';
 import type { ViewType } from '../types/index.ts';
+import { AnimatedLogo } from './Logo';
 
 interface SidebarProps {
     currentView: ViewType;
@@ -42,12 +44,16 @@ export function Sidebar({ currentView, setCurrentView }: SidebarProps) {
         <div className="w-64 bg-white flex flex-col h-screen border-r border-slate-200">
             {/* Logo Section */}
             <div className="h-16 flex items-center px-5 border-b border-slate-200">
-                <div className="flex items-center gap-3">
-                    <img src="/src/assets/logo.png" alt="KeyReply" className="w-9 h-9 object-contain" />
+                <button
+                    className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                    onClick={() => setCurrentView('logo-demo')}
+                    title="View Logo Demo"
+                >
+                    <AnimatedLogo size="sm" state="idle" />
                     <div>
                         <span className="font-semibold text-lg text-slate-900 tracking-tight">KeyReply</span>
                     </div>
-                </div>
+                </button>
             </div>
 
             {/* Navigation */}

@@ -16,6 +16,7 @@ import WorkflowList from './components/Workflows/WorkflowList';
 import Testing from './components/Testing/Testing';
 import WidgetSettings from './components/Widget/WidgetSettings';
 import Settings from './components/Settings/Settings';
+import LogoDemo from './components/Logo/LogoDemo';
 import { allConversationData } from './data/conversations';
 import { generateAIResponse } from './utils/ai';
 import { api } from './services/api';
@@ -460,6 +461,10 @@ function App() {
 
       {currentView === 'contacts' && (
         <Contacts />
+      )}
+
+      {currentView === 'logo-demo' && (
+        <LogoDemo />
       )}
 
       {/* Global AI Agent */}
