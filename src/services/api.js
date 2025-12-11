@@ -154,6 +154,16 @@ class ApiClient {
         delete: (id) => this.delete(`/customers/${id}`)
     };
 
+    /* Campaigns */
+    campaigns = {
+        list: () => this.get('/campaigns'),
+        get: (id) => this.get(`/campaigns/${id}`),
+        create: (data) => this.post('/campaigns', data),
+        start: (id) => this.post(`/campaigns/${id}/action`, { action: 'start' }),
+        pause: (id) => this.post(`/campaigns/${id}/action`, { action: 'pause' }),
+        status: (id) => this.get(`/campaigns/${id}/status`)
+    };
+
     /* Auth */
     auth = {
         login: (credentials) => this.post('/auth/login', credentials),

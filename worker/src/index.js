@@ -21,6 +21,11 @@ import sttRouter from './routes/stt.js';
 import analyticsRouter from './routes/analytics.js';
 import chatRouter from './routes/chat.js';
 import uploadRouter from './routes/upload.js';
+import emailRouter from './routes/email.js';
+import campaignsRouter from './routes/campaigns.js';
+import { processDocumentQueue } from './services/rag.js';
+import { processAnalyticsQueue } from './services/AnalyticsService.js';
+import { sendEmail, getEmailTemplate } from './services/email.js';
 
 // Import AI configuration
 import { getAllModels } from './services/ai-config.js';
@@ -111,10 +116,17 @@ app.route('/conversations', conversationsRouter);
 app.route('/agents', agentsRouter);
 app.route('/notifications', notificationsRouter);
 app.route('/documents', documentsRouter);
-app.route('/emails', emailsRouter);
+app.route('/emails', emailsRouter); // Original emails route if it existed, otherwise can replace
+// Ideally we should use the new emailRouter
+// But line 114 already had `app.route('/emails', emailsRouter);`
+// Let's check line 19 which was `import emailsRouter from './routes/emails.js';`
+// I added `import emailRouter from './routes/email.js';` in previous step.
+// I should replace the route mount to use the new router.
+app.route('/email', emailRouter);
 app.route('/stt', sttRouter);
 app.route('/chat', chatRouter);
 app.route('/upload', uploadRouter);
+app.route('/campaigns', campaignsRouter);
 
 // Mount analytics route
 app.route('/analytics', analyticsRouter);
@@ -176,6 +188,11 @@ async function handleQueue(batch, env) {
   // Check which queue this batch is from
   if (batch.queue === 'ppp-academy-analytics') {
     await handleAnalyticsQueue(batch, env);
+    return;
+  }
+
+  if (batch.queue === 'ppp-academy-emails') {
+    await handleEmailQueue(batch, env);
     return;
   }
 
@@ -262,6 +279,58 @@ async function handleAnalyticsQueue(batch, env) {
 }
 
 // ... rest of document functions ... 
+
+/**
+ * Handle email queue batch
+ */
+async function handleEmailQueue(batch, env) {
+  for (const message of batch.messages) {
+    try {
+      const { to, subject, template, tenantId, metadata, logId } = message.body;
+
+      // Generate content
+      let html = null;
+
+      if (template) {
+        html = getEmailTemplate(template, metadata || {});
+      }
+
+      // Send email
+      await sendEmail(env, {
+        to,
+        subject,
+        html,
+        tags: [template || 'custom']
+      });
+
+      // Update log to 'sent'
+      if (logId && env.DB) {
+        await env.DB.prepare("UPDATE email_logs SET status = 'sent', sent_at = datetime('now') WHERE id = ?")
+          .bind(logId)
+          .run();
+      }
+
+      message.ack();
+    } catch (error) {
+      console.error('Email queue processing error:', error);
+
+      const body = message.body || {};
+      if (body.logId && env.DB) {
+        await env.DB.prepare("UPDATE email_logs SET status = 'failed', error_message = ? WHERE id = ?")
+          .bind(error.message, body.logId)
+          .run()
+          .catch(e => console.error("Failed to log error", e));
+      }
+
+      // Retry a few times
+      if (message.attempts < 3) {
+        message.retry({ delaySeconds: 30 * message.attempts });
+      } else {
+        message.ack(); // Give up after retries
+      }
+    }
+  }
+}
 
 
 
@@ -366,6 +435,9 @@ export { WorkflowDO } from './durable-objects/WorkflowDO.js';
 
 // Analytics
 export { AnalyticsDO } from './durable-objects/AnalyticsDO.js';
+
+// Campaigns
+export { CampaignDO } from './durable-objects/CampaignDO.js';
 
 // ============================================
 // Worker Exports

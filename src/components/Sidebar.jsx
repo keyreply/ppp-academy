@@ -16,7 +16,7 @@ export function Sidebar({ currentView, setCurrentView }) {
     const navItems = [
         { id: 'dashboard', icon: HomeIcon, label: 'Dashboard' },
         { id: 'conversations', icon: ChatBubbleLeftRightIcon, label: 'Inbox', badge: 4 },
-        { id: 'tasks', icon: PhoneIcon, label: 'Task Management' },
+        { id: 'campaigns', icon: PhoneIcon, label: 'Campaigns' },
         { id: 'knowledge', icon: BookOpenIcon, label: 'Knowledge' },
         { id: 'channels', icon: SignalIcon, label: 'Channels' },
         { id: 'widget', icon: ChatBubbleOvalLeftEllipsisIcon, label: 'Widget' },

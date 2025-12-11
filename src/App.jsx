@@ -11,7 +11,7 @@ import EditBrand from './components/ManageBrands/EditBrand';
 import Channels from './components/Channels/Channels';
 import Contacts from './components/Contacts/Contacts';
 import KnowledgeBase from './components/Knowledge/KnowledgeBase';
-import TaskManagement from './components/Tasks/TaskManagement';
+import CampaignList from './components/Campaigns/CampaignList';
 import { allConversationData } from './data/conversations';
 import { generateAIResponse } from './utils/ai';
 import { api } from './services/api';
@@ -434,8 +434,8 @@ function App() {
         <KnowledgeBase />
       )}
 
-      {currentView === 'tasks' && (
-        <TaskManagement />
+      {currentView === 'campaigns' && (
+        <CampaignList />
       )}
 
       {currentView === 'widget' && (

@@ -39,6 +39,10 @@ class_name = "WorkflowDO"
 name = "ANALYTICS"
 class_name = "AnalyticsDO"
 
+[[durable_objects.bindings]]
+name = "CAMPAIGN"
+class_name = "CampaignDO"
+
 # SQLite migrations for Durable Objects
 [[migrations]]
 tag = "v1"
@@ -50,7 +54,8 @@ new_sqlite_classes = [
   "AgentDO",
   "NotificationDO",
   "WorkflowDO",
-  "AnalyticsDO"
+  "AnalyticsDO",
+  "CampaignDO"
 ]
 
 # ============================================
@@ -93,6 +98,15 @@ queue = "ppp-academy-analytics"
 queue = "ppp-academy-analytics"
 max_batch_size = 100
 max_batch_timeout = 10
+
+[[queues.producers]]
+binding = "EMAIL_QUEUE"
+queue = "ppp-academy-emails"
+
+[[queues.consumers]]
+queue = "ppp-academy-emails"
+max_batch_size = 10
+max_batch_timeout = 5
 
 # Workers AI
 [ai]
