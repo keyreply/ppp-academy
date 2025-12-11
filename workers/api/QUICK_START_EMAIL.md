@@ -7,10 +7,10 @@
 npm install nanoid
 
 # Create D1 database
-wrangler d1 create PPP_ACADEMY_DB
+wrangler d1 create KEYREPLY_KIRA_DB
 
 # Apply schema
-wrangler d1 execute PPP_ACADEMY_DB --file=schema.sql
+wrangler d1 execute KEYREPLY_KIRA_DB --file=schema.sql
 
 # Add Resend API key
 wrangler secret put RESEND_API_KEY
@@ -24,7 +24,7 @@ wrangler deploy
 ```toml
 [[d1_databases]]
 binding = "DB"
-database_name = "PPP_ACADEMY_DB"
+database_name = "KEYREPLY_KIRA_DB"
 database_id = "your-database-id-from-create-command"
 ```
 
@@ -127,7 +127,7 @@ Admin/Owner roles have all permissions by default.
 
 ```bash
 # View recent emails
-wrangler d1 execute PPP_ACADEMY_DB \
+wrangler d1 execute KEYREPLY_KIRA_DB \
   --command "SELECT * FROM email_logs ORDER BY created_at DESC LIMIT 10"
 
 # Check stats via API
@@ -144,7 +144,7 @@ curl -H "Authorization: Bearer <token>" \
 
 **Database errors?**
 - Verify D1 binding in wrangler.toml
-- Check schema is applied: `wrangler d1 execute PPP_ACADEMY_DB --command "SELECT * FROM email_logs LIMIT 1"`
+- Check schema is applied: `wrangler d1 execute KEYREPLY_KIRA_DB --command "SELECT * FROM email_logs LIMIT 1"`
 
 **Permission denied?**
 - Ensure user has `emails:send` permission

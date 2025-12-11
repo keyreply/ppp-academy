@@ -4,10 +4,10 @@
 
 ```bash
 # 1. Create database
-wrangler d1 create PPP_ACADEMY_DB
+wrangler d1 create KEYREPLY_KIRA_DB
 
 # 2. Apply schema
-wrangler d1 execute PPP_ACADEMY_DB --file=schema.sql
+wrangler d1 execute KEYREPLY_KIRA_DB --file=schema.sql
 
 # 3. Add API key
 wrangler secret put RESEND_API_KEY
@@ -122,7 +122,7 @@ WHERE DATE(created_at) = DATE('now');
 # wrangler.toml
 [[d1_databases]]
 binding = "DB"
-database_name = "PPP_ACADEMY_DB"
+database_name = "KEYREPLY_KIRA_DB"
 database_id = "your-database-id"
 ```
 
@@ -140,7 +140,7 @@ wrangler secret put RESEND_API_KEY
 
 **Database error**
 ```bash
-wrangler d1 execute PPP_ACADEMY_DB --file=schema.sql
+wrangler d1 execute KEYREPLY_KIRA_DB --file=schema.sql
 ```
 
 **Permission denied**

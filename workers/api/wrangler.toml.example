@@ -1,4 +1,4 @@
-# PPP Academy Worker Configuration Example
+# KeyReply Kira Worker Configuration Example
 # Copy this file to wrangler.toml and update with your actual values
 
 name = "keyreply-kira-api"

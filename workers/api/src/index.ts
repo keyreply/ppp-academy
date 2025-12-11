@@ -48,8 +48,8 @@ import { getAllModels } from './services/ai-config.ts';
 // Import middleware
 import { trackApiUsage } from './middleware/auth.ts';
 
-// Import services
-import { processDocument as processDocumentRAG } from './services/rag.ts';
+// AI Search handles document processing automatically when files are uploaded to R2
+// No need to import rag.ts - keeping for backward compatibility during migration
 
 // Create main Hono app with typed environment
 const app = new Hono<HonoEnv>();
@@ -364,70 +364,91 @@ async function handleEmailQueue(
 
 
 /**
- * Process document (extract text, generate embeddings, etc.)
+ * Process document - AI Search handles this automatically
+ *
+ * With AI Search, documents are automatically indexed when uploaded to R2.
+ * This function is kept for backward compatibility but does minimal work.
  */
 async function processDocument(data: DocumentQueueData, env: WorkerEnv): Promise<void> {
   const { documentId, tenantId } = data;
 
-  console.log(`Processing document ${documentId} for tenant ${tenantId}`);
+  console.log(`Document ${documentId} uploaded - AI Search will index automatically`);
 
-  // Use the RAG service to process the document
-  await processDocumentRAG(env, tenantId, documentId);
+  // Update document status to indicate indexing started
+  // AI Search handles the actual chunking and embedding
+  await env.DB.prepare(
+    'UPDATE documents SET status = ?, updated_at = ? WHERE id = ?'
+  )
+  .bind('indexing', new Date().toISOString(), documentId)
+  .run();
 
-  console.log(`Document ${documentId} processed successfully`);
+  console.log(`Document ${documentId} status updated to indexing`);
 }
 
 /**
- * Embed document chunks into vector database
+ * Embed document - No longer needed with AI Search
+ *
+ * AI Search automatically generates embeddings when documents are added to R2.
+ * This function is kept for backward compatibility but is a no-op.
  */
-async function embedDocument(data: DocumentQueueData, env: WorkerEnv): Promise<void> {
-  const { documentId, chunks = [], tenantId } = data;
-
-  console.log(`Embedding ${chunks.length} chunks for document ${documentId}`);
-
-  const embeddings = [];
-
-  for (const chunk of chunks) {
-    // Use Qwen3 Embedding model (1024 dimensions)
-    const result = await env.AI.run('@cf/qwen/qwen3-embedding-0.6b', {
-      text: chunk.text
-    });
-
-    embeddings.push({
-      id: `${documentId}:${chunk.index}`,
-      values: result.data[0],
-      metadata: {
-        tenantId,
-        documentId,
-        chunkIndex: chunk.index,
-        text: chunk.text
-      }
-    });
-  }
-
-  await env.VECTORIZE.insert(embeddings);
-
-  console.log(`Embedded ${embeddings.length} chunks for document ${documentId}`);
+async function embedDocument(data: DocumentQueueData, _env: WorkerEnv): Promise<void> {
+  const { documentId } = data;
+  console.log(`Embed request for ${documentId} - AI Search handles embedding automatically`);
+  // No-op: AI Search handles embeddings automatically
 }
 
 /**
- * Delete document and its embeddings
+ * Delete document from R2 and D1
+ *
+ * AI Search automatically removes the document from its index
+ * when the R2 object is deleted.
  */
 async function deleteDocument(data: DocumentQueueData, env: WorkerEnv): Promise<void> {
   const { documentId, tenantId } = data;
 
   console.log(`Deleting document ${documentId}`);
 
-  // Delete from R2
-  await env.DOCS_BUCKET.delete(`${tenantId}/${documentId}`);
+  // Get the storage path from D1
+  const doc = await env.DB.prepare(
+    'SELECT storage_path, file_size FROM documents WHERE id = ? AND tenant_id = ?'
+  )
+  .bind(documentId, tenantId)
+  .first();
 
-  // Delete embeddings from Vectorize
-  // Note: Vectorize delete implementation would go here
+  if (doc?.storage_path) {
+    // Delete from R2 (AI Search auto-removes from index)
+    await env.DOCS_BUCKET.delete(doc.storage_path as string);
+  }
 
   // Delete from D1
   await env.DB.prepare('DELETE FROM documents WHERE id = ?')
     .bind(documentId)
     .run();
+
+  // Update tenant usage
+  if (doc?.file_size) {
+    try {
+      const tenantStub = env.TENANT.get(env.TENANT.idFromName(tenantId));
+      await tenantStub.fetch('http://internal/usage/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          metric: 'documents_count',
+          increment: -1
+        })
+      });
+      await tenantStub.fetch('http://internal/usage/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          metric: 'storage_used_mb',
+          increment: -(doc.file_size as number) / (1024 * 1024)
+        })
+      });
+    } catch (err) {
+      console.error('Failed to update tenant usage:', err);
+    }
+  }
 
   console.log(`Document ${documentId} deleted successfully`);
 }

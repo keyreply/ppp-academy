@@ -16,7 +16,8 @@
     "voice:dev": "cd workers/voice && bun run dev",
     "voice:deploy": "cd workers/voice && bun install && bun run deploy",
     "workers:dev": "concurrently \"bun run api:dev\" \"bun run voice:dev\"",
-    "workers:deploy": "bun run api:deploy && bun run voice:deploy"
+    "workers:deploy": "bun run api:deploy && bun run voice:deploy",
+    "upload:docs": "bun run scripts/upload-docs-to-r2.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

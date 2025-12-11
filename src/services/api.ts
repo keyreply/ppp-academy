@@ -36,14 +36,18 @@ interface DocumentStats {
 }
 
 // Chat types
+type KnowledgeSource = 'user' | 'self' | 'all';
+
 interface ChatResponse {
   response: string;
   sources?: Array<{
-    document_id: string;
-    chunk_index: number;
-    text: string;
+    documentName: string;
     score: number;
+    preview: string;
   }>;
+  hasContext?: boolean;
+  searchQuery?: string;
+  knowledgeSource?: KnowledgeSource;
 }
 
 // Auth types
@@ -191,8 +195,32 @@ class ApiClient {
 
   /* Chat / RAG */
   chat = {
-    send: (prompt: string, context?: string, useThinking = false): Promise<ChatResponse> =>
-      this.post('/chat', { prompt, context, useThinking })
+    /**
+     * Send a chat message with RAG
+     * @param prompt - The user's question
+     * @param context - Current page context
+     * @param useThinking - Enable thinking mode
+     * @param knowledgeSource - 'user' (your docs), 'self' (Kira docs), or 'all' (both)
+     */
+    send: (
+      prompt: string,
+      context?: string,
+      useThinking = false,
+      knowledgeSource: KnowledgeSource = 'user'
+    ): Promise<ChatResponse> =>
+      this.post('/chat', { prompt, context, useThinking, knowledgeSource }),
+
+    /**
+     * Search Kira's self-documentation
+     */
+    searchSelfDocs: (query: string): Promise<ChatResponse> =>
+      this.post('/chat', { prompt: query, knowledgeSource: 'self' }),
+
+    /**
+     * Search all knowledge sources (user docs + Kira docs)
+     */
+    searchAll: (prompt: string, context?: string): Promise<ChatResponse> =>
+      this.post('/chat', { prompt, context, knowledgeSource: 'all' })
   };
 
   /* Conversations / Chat */

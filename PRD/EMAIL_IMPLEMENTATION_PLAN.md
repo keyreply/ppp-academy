@@ -1,4 +1,4 @@
-# Outbound Email Implementation Plan for PPP Academy
+# Outbound Email Implementation Plan for KeyReply Kira
 
 ## Implementation Status
 - [x] **Phase 1: Resend Setup**
@@ -15,7 +15,7 @@
 
 ## Overview
 
-This plan implements outbound email capabilities for the PPP Academy SaaS platform using Cloudflare-native services. The system will support transactional emails (welcome, password reset, notifications) and user-triggered emails.
+This plan implements outbound email capabilities for the KeyReply Kira SaaS platform using Cloudflare-native services. The system will support transactional emails (welcome, password reset, notifications) and user-triggered emails.
 
 ## Email Options Comparison
 
@@ -137,7 +137,7 @@ export class EmailService {
     this.resend = new Resend(env.RESEND_API_KEY);
     this.db = env.DB;
     this.fromEmail = env.EMAIL_FROM || 'noreply@kira.keyreply.com';
-    this.fromName = env.EMAIL_FROM_NAME || 'PPP Academy';
+    this.fromName = env.EMAIL_FROM_NAME || 'KeyReply Kira';
   }
 
   async send({ to, subject, html, text, template, userId, metadata }) {
@@ -195,12 +195,12 @@ export class EmailService {
   async sendWelcome(user) {
     return this.send({
       to: user.email,
-      subject: 'Welcome to PPP Academy!',
+      subject: 'Welcome to KeyReply Kira!',
       template: 'welcome',
       userId: user.id,
       metadata: { name: user.name },
       html: this.templates.welcome(user),
-      text: `Welcome to PPP Academy, ${user.name || 'there'}! We're excited to have you.`,
+      text: `Welcome to KeyReply Kira, ${user.name || 'there'}! We're excited to have you.`,
     });
   }
 
@@ -208,7 +208,7 @@ export class EmailService {
     const resetUrl = `https://kira.keyreply.com/reset-password?token=${resetToken}`;
     return this.send({
       to: user.email,
-      subject: 'Reset Your Password - PPP Academy',
+      subject: 'Reset Your Password - KeyReply Kira',
       template: 'password_reset',
       userId: user.id,
       metadata: { resetUrl },
@@ -237,16 +237,16 @@ export class EmailService {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Welcome to PPP Academy</title>
+          <title>Welcome to KeyReply Kira</title>
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2563eb; margin: 0;">PPP Academy</h1>
+            <h1 style="color: #2563eb; margin: 0;">KeyReply Kira</h1>
           </div>
 
           <h2>Welcome${user.name ? `, ${user.name}` : ''}!</h2>
 
-          <p>Thank you for joining PPP Academy. We're excited to have you on board.</p>
+          <p>Thank you for joining KeyReply Kira. We're excited to have you on board.</p>
 
           <p>Here's what you can do next:</p>
           <ul>
@@ -269,7 +269,7 @@ export class EmailService {
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
 
           <p style="color: #999; font-size: 12px; text-align: center;">
-            PPP Academy • Your AI-Powered Learning Platform
+            KeyReply Kira • Your AI-Powered Learning Platform
           </p>
         </body>
       </html>
@@ -285,7 +285,7 @@ export class EmailService {
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2563eb; margin: 0;">PPP Academy</h1>
+            <h1 style="color: #2563eb; margin: 0;">KeyReply Kira</h1>
           </div>
 
           <h2>Reset Your Password</h2>
@@ -313,7 +313,7 @@ export class EmailService {
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
 
           <p style="color: #999; font-size: 12px; text-align: center;">
-            PPP Academy • Your AI-Powered Learning Platform
+            KeyReply Kira • Your AI-Powered Learning Platform
           </p>
         </body>
       </html>
@@ -329,7 +329,7 @@ export class EmailService {
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2563eb; margin: 0;">PPP Academy</h1>
+            <h1 style="color: #2563eb; margin: 0;">KeyReply Kira</h1>
           </div>
 
           <h2>Your Document is Ready!</h2>
@@ -357,7 +357,7 @@ export class EmailService {
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
 
           <p style="color: #999; font-size: 12px; text-align: center;">
-            PPP Academy • Your AI-Powered Learning Platform
+            KeyReply Kira • Your AI-Powered Learning Platform
           </p>
         </body>
       </html>
@@ -513,11 +513,11 @@ email.post('/test', async (c) => {
   try {
     const result = await emailService.send({
       to: to || c.get('user').email,
-      subject: 'Test Email from PPP Academy',
+      subject: 'Test Email from KeyReply Kira',
       template: 'test',
       userId,
-      html: '<h1>Test Email</h1><p>This is a test email from PPP Academy.</p>',
-      text: 'This is a test email from PPP Academy.',
+      html: '<h1>Test Email</h1><p>This is a test email from KeyReply Kira.</p>',
+      text: 'This is a test email from KeyReply Kira.',
     });
 
     return c.json({ success: true, ...result });
@@ -668,7 +668,7 @@ export class CloudflareEmailService {
       // Native Cloudflare Email Service
       await this.email.send({
         to: [{ email: to }],
-        from: { email: 'noreply@kira.keyreply.com', name: 'PPP Academy' },
+        from: { email: 'noreply@kira.keyreply.com', name: 'KeyReply Kira' },
         subject,
         html,
         text,
@@ -715,7 +715,7 @@ npx wrangler secret put RESEND_API_KEY
 # Optional environment variables (in wrangler.toml)
 [vars]
 EMAIL_FROM = "noreply@kira.keyreply.com"
-EMAIL_FROM_NAME = "PPP Academy"
+EMAIL_FROM_NAME = "KeyReply Kira"
 ```
 
 ## Email Types Summary

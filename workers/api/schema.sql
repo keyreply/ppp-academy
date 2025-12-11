@@ -209,7 +209,7 @@ VALUES
 -- To add to wrangler.toml:
 -- [[d1_databases]]
 -- binding = "DB"
--- database_name = "PPP_ACADEMY_DB"
+-- database_name = "KEYREPLY_KIRA_DB"
 -- database_id = "your-database-id"
 --
 -- To add Resend API key:

@@ -1,26 +1,36 @@
 import { Hono } from 'hono';
-import { getUserId } from '../middleware/auth';
+import { getUserId, getTenantId } from '../middleware/auth';
 
 const documents = new Hono();
 
 /**
  * GET /documents
  * List user's documents
+ *
+ * With AI Search, documents are automatically indexed when uploaded to R2.
+ * This endpoint lists document metadata from D1.
  */
 documents.get('/', async (c) => {
   const userId = getUserId(c);
+  const tenantId = getTenantId(c) || `user_${userId}`;
 
   try {
     const { results } = await c.env.DB.prepare(`
-      SELECT id, original_name, content_type, file_size, status, chunk_count,
-             error_message, uploaded_at, processed_at
+      SELECT id, original_name, content_type, file_size, status, storage_path,
+             metadata, created_at, updated_at
       FROM documents
-      WHERE user_id = ?
-      ORDER BY uploaded_at DESC
+      WHERE tenant_id = ?
+      ORDER BY created_at DESC
       LIMIT 100
-    `).bind(userId).all();
+    `).bind(tenantId).all();
 
-    return c.json({ documents: results });
+    // Parse metadata JSON for each document
+    const documents = results.map(doc => ({
+      ...doc,
+      metadata: doc.metadata ? JSON.parse(doc.metadata as string) : {}
+    }));
+
+    return c.json({ documents });
   } catch (error) {
     console.error('List documents error:', error);
     return c.json({ error: 'Failed to list documents' }, 500);
@@ -33,24 +43,25 @@ documents.get('/', async (c) => {
  */
 documents.get('/:id', async (c) => {
   const userId = getUserId(c);
+  const tenantId = getTenantId(c) || `user_${userId}`;
   const id = c.req.param('id');
 
   try {
     const document = await c.env.DB.prepare(`
-      SELECT * FROM documents WHERE id = ? AND user_id = ?
-    `).bind(id, userId).first();
+      SELECT * FROM documents WHERE id = ? AND tenant_id = ?
+    `).bind(id, tenantId).first();
 
     if (!document) {
       return c.json({ error: 'Document not found' }, 404);
     }
 
-    const { results: chunks } = await c.env.DB.prepare(`
-      SELECT id, chunk_index, content FROM chunks
-      WHERE document_id = ? AND user_id = ?
-      ORDER BY chunk_index
-    `).bind(id, userId).all();
-
-    return c.json({ document, chunks });
+    // AI Search handles chunking automatically - no chunks table needed
+    return c.json({
+      document: {
+        ...document,
+        metadata: document.metadata ? JSON.parse(document.metadata as string) : {}
+      }
+    });
   } catch (error) {
     console.error('Get document error:', error);
     return c.json({ error: 'Failed to get document' }, 500);
@@ -59,44 +70,65 @@ documents.get('/:id', async (c) => {
 
 /**
  * DELETE /documents/:id
- * Delete document and its embeddings
+ * Delete document from R2 and D1
+ *
+ * AI Search automatically removes the document from its index
+ * when the R2 object is deleted.
  */
 documents.delete('/:id', async (c) => {
   const userId = getUserId(c);
+  const tenantId = getTenantId(c) || `user_${userId}`;
   const id = c.req.param('id');
 
   try {
     // Get document (verify ownership)
     const document = await c.env.DB.prepare(
-      'SELECT filename FROM documents WHERE id = ? AND user_id = ?'
-    ).bind(id, userId).first();
+      'SELECT storage_path, file_size FROM documents WHERE id = ? AND tenant_id = ?'
+    ).bind(id, tenantId).first();
 
     if (!document) {
       return c.json({ error: 'Document not found' }, 404);
     }
 
-    // Get chunk IDs for vector deletion
-    const { results: chunks } = await c.env.DB.prepare(
-      'SELECT id FROM chunks WHERE document_id = ? AND user_id = ?'
-    ).bind(id, userId).all();
-
-    // Delete from Vectorize (in user's namespace)
-    if (chunks.length > 0) {
-      const namespace = `user_${userId}`;
-      // Vectorize supports deleteByIds
-      await c.env.VECTORIZE.deleteByIds(chunks.map(c => c.id), { namespace });
+    // Delete from R2 (AI Search auto-removes from index)
+    if (document.storage_path) {
+      try {
+        await c.env.DOCS_BUCKET.delete(document.storage_path as string);
+      } catch (err) {
+        console.error('Failed to delete from R2:', err);
+      }
     }
 
-    // Delete from D1 (Foreign Key CASCADE usually handles chunks if configured, 
-    // but explicit delete is safer if CASCADE not set).
-    // Our plan script had CASCADE, so deleting document should be enough for D1 chunks.
-    await c.env.DB.prepare('DELETE FROM documents WHERE id = ? AND user_id = ?')
-      .bind(id, userId).run();
+    // Delete metadata from D1
+    await c.env.DB.prepare('DELETE FROM documents WHERE id = ? AND tenant_id = ?')
+      .bind(id, tenantId).run();
 
-    // Delete from R2
-    // Verify filename property exists
-    if (document.filename) {
-      await c.env.DOCS_BUCKET.delete(document.filename);
+    // Update tenant usage tracking
+    try {
+      const tenantStub = c.env.TENANT.get(c.env.TENANT.idFromName(tenantId));
+
+      await tenantStub.fetch('http://internal/usage/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          metric: 'documents_count',
+          increment: -1
+        })
+      });
+
+      if (document.file_size) {
+        const fileSizeMB = (document.file_size as number) / (1024 * 1024);
+        await tenantStub.fetch('http://internal/usage/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            metric: 'storage_used_mb',
+            increment: -fileSizeMB
+          })
+        });
+      }
+    } catch (err) {
+      console.error('Failed to update tenant usage:', err);
     }
 
     return c.json({ success: true, message: 'Document deleted' });
@@ -112,24 +144,62 @@ documents.delete('/:id', async (c) => {
  */
 documents.get('/stats/summary', async (c) => {
   const userId = getUserId(c);
+  const tenantId = getTenantId(c) || `user_${userId}`;
 
   try {
     const stats = await c.env.DB.prepare(`
       SELECT
         COUNT(*) as total_documents,
         SUM(COALESCE(file_size, 0)) as total_size,
-        SUM(COALESCE(chunk_count, 0)) as total_chunks,
-        SUM(CASE WHEN status = 'ready' THEN 1 ELSE 0 END) as ready_documents,
-        SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing_documents,
-        SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_documents
+        SUM(CASE WHEN status = 'indexing' THEN 1 ELSE 0 END) as indexing_documents,
+        SUM(CASE WHEN status = 'ready' OR status = 'indexed' THEN 1 ELSE 0 END) as ready_documents,
+        SUM(CASE WHEN status = 'failed' OR status = 'error' THEN 1 ELSE 0 END) as failed_documents
       FROM documents
-      WHERE user_id = ?
-    `).bind(userId).first();
+      WHERE tenant_id = ?
+    `).bind(tenantId).first();
 
     return c.json({ stats });
   } catch (error) {
     console.error('Stats error:', error);
     return c.json({ error: 'Failed to get stats' }, 500);
+  }
+});
+
+/**
+ * GET /documents/:id/download
+ * Download document file from R2
+ */
+documents.get('/:id/download', async (c) => {
+  const userId = getUserId(c);
+  const tenantId = getTenantId(c) || `user_${userId}`;
+  const id = c.req.param('id');
+
+  try {
+    const document = await c.env.DB.prepare(`
+      SELECT storage_path, original_name, content_type FROM documents
+      WHERE id = ? AND tenant_id = ?
+    `).bind(id, tenantId).first();
+
+    if (!document) {
+      return c.json({ error: 'Document not found' }, 404);
+    }
+
+    const r2Object = await c.env.DOCS_BUCKET.get(document.storage_path as string);
+
+    if (!r2Object) {
+      return c.json({ error: 'Document file not found in storage' }, 404);
+    }
+
+    return new Response(r2Object.body, {
+      headers: {
+        'Content-Type': document.content_type as string || 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${document.original_name}"`,
+        'Content-Length': r2Object.size.toString()
+      }
+    });
+  } catch (error) {
+    console.error('Download error:', error);
+    return c.json({ error: 'Failed to download document' }, 500);
   }
 });
 

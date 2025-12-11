@@ -1,7 +1,7 @@
 # RAG System Implementation Summary
 
 ## Overview
-Successfully implemented a complete RAG (Retrieval Augmented Generation) system for PPP Academy using Cloudflare Workers AI, Vectorize, R2, and D1.
+Successfully implemented a complete RAG (Retrieval Augmented Generation) system for KeyReply Kira using Cloudflare Workers AI, Vectorize, R2, and D1.
 
 ## Files Created
 

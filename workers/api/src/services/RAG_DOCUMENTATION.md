@@ -2,7 +2,7 @@
 
 ## Overview
 
-The RAG system for PPP Academy enables semantic search and AI-powered question answering over uploaded documents. It uses Cloudflare's Workers AI for embeddings and text generation, Vectorize for vector storage, R2 for file storage, and D1 for metadata.
+The RAG system for KeyReply Kira enables semantic search and AI-powered question answering over uploaded documents. It uses Cloudflare's Workers AI for embeddings and text generation, Vectorize for vector storage, R2 for file storage, and D1 for metadata.
 
 ## Architecture
 

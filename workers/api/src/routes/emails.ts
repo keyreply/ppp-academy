@@ -420,10 +420,10 @@ app.post('/test', requirePermission('emails:send'), async (c) => {
     // Send test email
     const result = await sendEmail(c.env, {
       to: userEmail,
-      subject: 'Test Email - PPP Academy',
+      subject: 'Test Email - KeyReply Kira',
       html: `
         <h1>Test Email</h1>
-        <p>This is a test email from PPP Academy.</p>
+        <p>This is a test email from KeyReply Kira.</p>
         <p>If you received this, your email configuration is working correctly!</p>
         <p>Sent at: ${new Date().toISOString()}</p>
       `,

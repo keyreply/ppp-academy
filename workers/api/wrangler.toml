@@ -76,11 +76,17 @@ binding = "DB"
 database_name = "keyreply-kira-db"
 database_id = "cafcc326-7c01-4a14-96e8-0500b26d03d6"
 
-# Vectorize index for RAG
-# IMPORTANT: Created with 1024 dimensions for Qwen3 Embedding model
-[[vectorize]]
-binding = "VECTORIZE"
-index_name = "keyreply-kira-vectors"
+# AI Search instance for RAG (replaces Vectorize)
+# Uses automatic chunking, embeddings, similarity cache, and AI Gateway
+# Multitenancy via folder-based metadata filtering: {tenantId}/documents/
+# Create via: wrangler ai search create keyreply-kira-search --r2-bucket keyreply-kira-docs
+# Note: AI binding provides access via env.AI.autorag("keyreply-kira-search")
+
+# AI Gateway for monitoring, caching, and rate limiting
+# Uncomment gateway line after creating: wrangler ai gateway create keyreply-kira-gateway
+[ai]
+binding = "AI"
+# gateway = { id = "keyreply-kira-gateway" }
 
 # Queue for document processing
 [[queues.producers]]
@@ -124,9 +130,7 @@ max_batch_timeout = 5
 binding = "VOICE_SERVICE"
 service = "voice-agent"
 
-# Workers AI
-[ai]
-binding = "AI"
+# Workers AI (configured above with AI Gateway)
 
 # ============================================
 # Environment Variables

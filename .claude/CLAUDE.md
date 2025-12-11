@@ -119,7 +119,8 @@ Real-time voice AI for outbound calls using streaming STT/LLM/TTS.
 **API Worker** (defined in `workers/api/wrangler.toml`):
 - **D1**: SQLite database (`DB`)
 - **R2**: Document storage (`DOCS_BUCKET`)
-- **Vectorize**: RAG embeddings (`VECTORIZE`) - 1024 dimensions for Qwen3
+- **AI Search**: RAG with automatic indexing via `env.AI.autorag('keyreply-kira-search')`
+- **AI Gateway**: Monitoring, caching, rate limiting (`keyreply-kira-gateway`)
 - **Queues**: Document processing, analytics, emails
 - **Workers AI**: `AI` binding for embeddings and inference
 - **Dispatch Namespace**: `DISPATCHER` for platform functions
@@ -135,10 +136,32 @@ Real-time voice AI for outbound calls using streaming STT/LLM/TTS.
 
 - Frontend communicates with API worker via `src/services/api.ts`
 - Real-time messaging uses WebSocket via `src/services/conversationService.ts`
-- AI responses use RAG pipeline: Documents → R2 → Vectorize → Workers AI
+- AI responses use RAG via **AI Search**: Documents → R2 → AI Search (auto-index) → AI Gateway
+- Multitenancy via folder-based metadata filtering: `{tenantId}/documents/{filename}`
+- Similarity cache for repeated queries (30-day retention)
 - Durable Objects use SQLite storage (see migrations in wrangler.toml)
 - Voice API requests are proxied from API Worker → Voice Worker via Service Binding
 - Voice sessions use WebSocket for real-time bidirectional audio streaming
+
+## RAG with AI Search
+
+AI Search automatically handles document indexing when files are uploaded to R2:
+
+```
+Upload Document → R2 Bucket → AI Search Auto-Index
+                                    ↓
+User Query → AI Search (folder filter) → Similarity Cache Check
+                                    ↓
+                              AI Gateway → Response
+```
+
+**Key files:**
+- `workers/api/src/services/ai-search.ts` - AI Search service with multitenancy
+- `workers/api/src/routes/chat.ts` - Chat endpoint using AI Search
+- `workers/api/src/routes/upload.ts` - Document upload to R2
+
+**Multitenancy:** Documents are stored with folder paths like `{tenantId}/documents/{filename}`.
+Search queries use folder metadata filters for tenant isolation.
 
 ## Voice Pipeline Architecture
 

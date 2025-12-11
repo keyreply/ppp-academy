@@ -1,6 +1,6 @@
 # Email Service Migration Guide
 
-This guide helps you integrate the new email service into your existing PPP Academy setup.
+This guide helps you integrate the new email service into your existing KeyReply Kira setup.
 
 ## Pre-Migration Checklist
 
@@ -313,7 +313,7 @@ If you encounter issues:
 
 ## Conclusion
 
-The email service is designed to integrate seamlessly with your existing PPP Academy setup. All changes are additive and won't affect existing functionality.
+The email service is designed to integrate seamlessly with your existing KeyReply Kira setup. All changes are additive and won't affect existing functionality.
 
 **Estimated migration time:** 15-30 minutes
 

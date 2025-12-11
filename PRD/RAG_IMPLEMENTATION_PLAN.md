@@ -1,4 +1,4 @@
-# RAG Implementation Plan for PPP Academy
+# RAG Implementation Plan for KeyReply Kira
 
 ## Implementation Status
 - [ ] **Phase 1: Infrastructure Setup**
@@ -594,7 +594,7 @@ chat.post('/', async (c) => {
   }
 
   // 4. Build messages for Qwen3
-  const systemPrompt = `You are Kira, an intelligent AI assistant for PPP Academy.
+  const systemPrompt = `You are Kira, an intelligent AI assistant for KeyReply Kira.
 
 Your role is to help users by providing accurate, helpful responses based on their personal knowledge base.
 

@@ -17,7 +17,7 @@
 
 ## Overview
 
-This plan implements a **Tenant Durable Object** to represent and manage the complete lifecycle of a tenant (organization/company) in the PPP Academy SaaS platform. Each tenant gets their own Durable Object instance with embedded SQLite storage for managing users, settings, billing, usage tracking, and organizational data.
+This plan implements a **Tenant Durable Object** to represent and manage the complete lifecycle of a tenant (organization/company) in the KeyReply Kira SaaS platform. Each tenant gets their own Durable Object instance with embedded SQLite storage for managing users, settings, billing, usage tracking, and organizational data.
 
 **Key principles:**
 - One Durable Object per tenant - complete data isolation
@@ -852,7 +852,7 @@ export class TenantDO extends DurableObject {
 
   async generateApiKey({ name, permissions = ['read'], rateLimit = 100, expiresAt = null, createdById, createdByName }) {
     const id = crypto.randomUUID();
-    const key = `ppp_${this.generateRandomString(32)}`;
+    const key = `kira_${this.generateRandomString(32)}`;
     const keyPrefix = key.substring(0, 12);
     const keyHash = await this.hashApiKey(key);
 

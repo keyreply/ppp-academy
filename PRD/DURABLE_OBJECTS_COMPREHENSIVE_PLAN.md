@@ -1,14 +1,14 @@
-# Comprehensive Durable Objects Plan for PPP Academy
+# Comprehensive Durable Objects Plan for KeyReply Kira
 
 ## Overview
 
-This document outlines all Durable Objects in the PPP Academy system, their purposes, and when to use them vs traditional D1 database. The key addition is **AI Context/Memory** for customers - a living summary that accompanies every AI interaction.
+This document outlines all Durable Objects in the KeyReply Kira system, their purposes, and when to use them vs traditional D1 database. The key addition is **AI Context/Memory** for customers - a living summary that accompanies every AI interaction.
 
 ## Durable Objects Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              PPP Academy System                              │
+│                              KeyReply Kira System                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐                 │
@@ -683,7 +683,7 @@ export class ConversationDO extends DurableObject {
   }
 
   getDefaultSystemPrompt(customerContext) {
-    return `You are Kira, an AI assistant for PPP Academy.
+    return `You are Kira, an AI assistant for KeyReply Kira.
 
 ${customerContext ? `## Customer Context\n${customerContext}\n` : ''}
 

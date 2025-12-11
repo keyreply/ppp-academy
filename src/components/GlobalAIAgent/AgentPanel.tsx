@@ -8,12 +8,44 @@ import {
     FaceSmileIcon,
     ArrowUpIcon,
     SparklesIcon,
-    DocumentTextIcon
+    DocumentTextIcon,
+    CodeBracketIcon,
+    GlobeAltIcon,
+    ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import KnowledgeBase from './KnowledgeBase';
 
 import { generateGeminiResponse } from '../../services/gemini';
 import { api } from '../../services/api';
+
+// Knowledge source options
+type KnowledgeSource = 'user' | 'self' | 'all';
+
+const KNOWLEDGE_SOURCES: Array<{
+    id: KnowledgeSource;
+    label: string;
+    description: string;
+    icon: React.ComponentType<{ className?: string }>;
+}> = [
+    {
+        id: 'user',
+        label: 'My Documents',
+        description: 'Search your uploaded files',
+        icon: DocumentTextIcon
+    },
+    {
+        id: 'self',
+        label: 'Kira Docs',
+        description: 'Search Kira\'s documentation',
+        icon: CodeBracketIcon
+    },
+    {
+        id: 'all',
+        label: 'All Sources',
+        description: 'Search everything',
+        icon: GlobeAltIcon
+    }
+];
 
 const AgentPanel = ({ isOpen, onClose, currentView, setCurrentView, context }) => {
     const [messages, setMessages] = useState([
@@ -92,10 +124,13 @@ const AgentPanel = ({ isOpen, onClose, currentView, setCurrentView, context }) =
     const [isRecording, setIsRecording] = useState(false);
     const [interimTranscript, setInterimTranscript] = useState('');
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [knowledgeSource, setKnowledgeSource] = useState<KnowledgeSource>('all');
+    const [showSourcePicker, setShowSourcePicker] = useState(false);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const recognitionRef = useRef(null);
     const emojiPickerRef = useRef(null);
+    const sourcePickerRef = useRef(null);
 
     // Common emojis organized by category
     const emojis = {
@@ -210,6 +245,23 @@ const AgentPanel = ({ isOpen, onClose, currentView, setCurrentView, context }) =
         };
     }, [showEmojiPicker]);
 
+    // Close source picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (sourcePickerRef.current && !sourcePickerRef.current.contains(event.target)) {
+                setShowSourcePicker(false);
+            }
+        };
+
+        if (showSourcePicker) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showSourcePicker]);
+
     const handleFileSelect = (e) => {
         if (e.target.files && e.target.files.length > 0) {
             const newFiles = Array.from(e.target.files).map(file => ({
@@ -224,11 +276,14 @@ const AgentPanel = ({ isOpen, onClose, currentView, setCurrentView, context }) =
     const handleSendMessage = async (text = inputValue) => {
         if (!text.trim() && attachedFiles.length === 0) return;
 
+        const currentSource = KNOWLEDGE_SOURCES.find(s => s.id === knowledgeSource);
+
         const newUserMsg = {
             id: Date.now(),
             type: 'user',
             content: text,
             files: attachedFiles,
+            knowledgeSource: knowledgeSource,
             timestamp: new Date().toISOString()
         };
 
@@ -238,13 +293,15 @@ const AgentPanel = ({ isOpen, onClose, currentView, setCurrentView, context }) =
         setIsTyping(true);
 
         try {
-            // Use RAG API for all queries
-            const response = await api.chat.send(text, context.page);
+            // Use RAG API with selected knowledge source
+            const response = await api.chat.send(text, context.page, false, knowledgeSource);
 
             const aiResponse = {
                 id: Date.now() + 1,
                 type: 'ai',
                 content: response.response || "I'm sorry, I couldn't process that request.",
+                sources: response.sources,
+                knowledgeSource: response.knowledgeSource,
                 timestamp: new Date().toISOString()
             };
             setMessages(prev => [...prev, aiResponse]);
@@ -315,10 +372,68 @@ const AgentPanel = ({ isOpen, onClose, currentView, setCurrentView, context }) =
                     className={`absolute inset-0 flex flex-col transition-transform duration-300 ${currentView === 'chat' ? 'translate-x-0' : '-translate-x-full'
                         }`}
                 >
-                    {/* Context Banner */}
-                    <div className="bg-[#1D57D8]/10/50 px-4 py-2 text-xs text-[#37CFFF] flex items-center gap-2 border-b border-[#1D57D8]/10">
-                        <SparklesIcon className="w-3 h-3" />
-                        <span>Viewing: <strong>{context.page}</strong></span>
+                    {/* Context Banner with Knowledge Source Selector */}
+                    <div className="bg-[#1D57D8]/10/50 px-4 py-2 text-xs text-[#37CFFF] flex items-center justify-between border-b border-[#1D57D8]/10">
+                        <div className="flex items-center gap-2">
+                            <SparklesIcon className="w-3 h-3" />
+                            <span>Viewing: <strong>{context.page}</strong></span>
+                        </div>
+
+                        {/* Knowledge Source Selector */}
+                        <div className="relative" ref={sourcePickerRef}>
+                            <button
+                                onClick={() => setShowSourcePicker(!showSourcePicker)}
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/80 hover:bg-white border border-slate-200 transition-colors"
+                            >
+                                {(() => {
+                                    const source = KNOWLEDGE_SOURCES.find(s => s.id === knowledgeSource);
+                                    const Icon = source?.icon || GlobeAltIcon;
+                                    return (
+                                        <>
+                                            <Icon className="w-3 h-3 text-[#6366F1]" />
+                                            <span className="text-slate-600 font-medium">{source?.label}</span>
+                                            <ChevronDownIcon className={`w-3 h-3 text-slate-400 transition-transform ${showSourcePicker ? 'rotate-180' : ''}`} />
+                                        </>
+                                    );
+                                })()}
+                            </button>
+
+                            {/* Source Picker Dropdown */}
+                            {showSourcePicker && (
+                                <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl p-2 w-56 z-50">
+                                    <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide px-2 mb-1">Knowledge Source</p>
+                                    {KNOWLEDGE_SOURCES.map((source) => {
+                                        const Icon = source.icon;
+                                        const isSelected = knowledgeSource === source.id;
+                                        return (
+                                            <button
+                                                key={source.id}
+                                                onClick={() => {
+                                                    setKnowledgeSource(source.id);
+                                                    setShowSourcePicker(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 p-2 rounded-lg transition-colors text-left ${isSelected
+                                                    ? 'bg-[#6366F1]/10 text-[#6366F1]'
+                                                    : 'hover:bg-slate-50 text-slate-600'
+                                                    }`}
+                                            >
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? 'bg-[#6366F1]/20' : 'bg-slate-100'
+                                                    }`}>
+                                                    <Icon className="w-4 h-4" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-medium">{source.label}</div>
+                                                    <div className="text-[10px] text-slate-400">{source.description}</div>
+                                                </div>
+                                                {isSelected && (
+                                                    <div className="w-2 h-2 rounded-full bg-[#6366F1]"></div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Messages */}
@@ -340,6 +455,39 @@ const AgentPanel = ({ isOpen, onClose, currentView, setCurrentView, context }) =
                                         }`}
                                 >
                                     {msg.content}
+
+                                    {/* Show sources for AI messages */}
+                                    {msg.type === 'ai' && msg.sources && msg.sources.length > 0 && (
+                                        <div className="mt-3 pt-3 border-t border-slate-100">
+                                            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-2">Sources</p>
+                                            <div className="space-y-1">
+                                                {msg.sources.slice(0, 3).map((source, idx) => (
+                                                    <div key={idx} className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 rounded-lg px-2 py-1.5">
+                                                        <DocumentTextIcon className="w-3 h-3 text-[#6366F1] shrink-0" />
+                                                        <span className="truncate flex-1">{source.documentName}</span>
+                                                        <span className="text-[10px] text-slate-400 shrink-0">{Math.round(source.score * 100)}%</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Show knowledge source badge */}
+                                    {msg.type === 'ai' && msg.knowledgeSource && (
+                                        <div className="mt-2 flex items-center gap-1">
+                                            {(() => {
+                                                const source = KNOWLEDGE_SOURCES.find(s => s.id === msg.knowledgeSource);
+                                                const Icon = source?.icon || GlobeAltIcon;
+                                                return (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
+                                                        <Icon className="w-2.5 h-2.5" />
+                                                        {source?.label}
+                                                    </span>
+                                                );
+                                            })()}
+                                        </div>
+                                    )}
+
                                     {msg.files && msg.files.length > 0 && (
                                         <div className="mt-2 space-y-1">
                                             {msg.files.map((file, idx) => (
@@ -360,21 +508,31 @@ const AgentPanel = ({ isOpen, onClose, currentView, setCurrentView, context }) =
                             <div className="space-y-2 mt-4 animate-fade-in">
                                 <p className="text-xs font-medium text-slate-500 ml-1">Suggested Actions</p>
                                 {[
-                                    { icon: DocumentTextIcon, text: "Analyze Document", sub: "Extract insights from files" },
-                                    { icon: SparklesIcon, text: "Summarize Page", sub: "Get key takeaways" }
+                                    { icon: DocumentTextIcon, text: "Analyze Document", sub: "Extract insights from files", source: 'user' as KnowledgeSource },
+                                    { icon: SparklesIcon, text: "Summarize Page", sub: "Get key takeaways", source: 'user' as KnowledgeSource },
+                                    { icon: CodeBracketIcon, text: "How does RAG work in Kira?", sub: "Learn about Kira's features", source: 'self' as KnowledgeSource },
+                                    { icon: CodeBracketIcon, text: "What are Durable Objects?", sub: "Explore Kira's architecture", source: 'self' as KnowledgeSource }
                                 ].map((action, idx) => (
                                     <button
                                         key={idx}
                                         className="w-full bg-white border border-slate-200 p-3 rounded-xl flex items-center gap-3 hover:border-[#37CFFF]/30 hover:shadow-sm transition-all text-left group"
-                                        onClick={() => handleSendMessage(action.text)}
+                                        onClick={() => {
+                                            if (action.source !== knowledgeSource) {
+                                                setKnowledgeSource(action.source);
+                                            }
+                                            handleSendMessage(action.text);
+                                        }}
                                     >
                                         <div className="w-8 h-8 rounded-lg bg-[#1D57D8]/10 text-[#37CFFF] flex items-center justify-center group-hover:bg-[#37CFFF] group-hover:text-white transition-colors">
                                             <action.icon className="w-4 h-4" />
                                         </div>
-                                        <div>
+                                        <div className="flex-1">
                                             <div className="text-sm font-medium text-white">{action.text}</div>
                                             <div className="text-xs text-slate-600">{action.sub}</div>
                                         </div>
+                                        {action.source === 'self' && (
+                                            <span className="text-[10px] bg-[#6366F1]/10 text-[#6366F1] px-2 py-0.5 rounded-full">Kira Docs</span>
+                                        )}
                                     </button>
                                 ))}
                             </div>

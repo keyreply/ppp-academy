@@ -1,6 +1,6 @@
-# Email Service - PPP Academy
+# Email Service - KeyReply Kira
 
-Complete email service implementation using Resend for PPP Academy.
+Complete email service implementation using Resend for KeyReply Kira.
 
 ## Features
 
@@ -69,7 +69,7 @@ npm install nanoid
 
 ```bash
 # Create the database
-wrangler d1 create PPP_ACADEMY_DB
+wrangler d1 create KEYREPLY_KIRA_DB
 
 # Note the database_id from the output
 ```
@@ -81,14 +81,14 @@ Add to your `wrangler.toml`:
 ```toml
 [[d1_databases]]
 binding = "DB"
-database_name = "PPP_ACADEMY_DB"
+database_name = "KEYREPLY_KIRA_DB"
 database_id = "your-database-id-here"
 ```
 
 ### 4. Apply Database Schema
 
 ```bash
-wrangler d1 execute PPP_ACADEMY_DB --file=schema.sql
+wrangler d1 execute KEYREPLY_KIRA_DB --file=schema.sql
 ```
 
 ### 5. Get Resend API Key
@@ -495,7 +495,7 @@ curl -H "Authorization: Bearer <token>" \
   https://your-worker.workers.dev/emails/logs
 
 # Via D1 CLI
-wrangler d1 execute PPP_ACADEMY_DB \
+wrangler d1 execute KEYREPLY_KIRA_DB \
   --command "SELECT * FROM email_logs ORDER BY created_at DESC LIMIT 10"
 ```
 
@@ -520,7 +520,7 @@ wrangler secret put RESEND_API_KEY
 ```bash
 # Verify D1 binding in wrangler.toml
 # Apply schema
-wrangler d1 execute PPP_ACADEMY_DB --file=schema.sql
+wrangler d1 execute KEYREPLY_KIRA_DB --file=schema.sql
 ```
 
 ### Emails not sending
@@ -579,4 +579,4 @@ For issues or questions:
 
 ## License
 
-Part of PPP Academy - All rights reserved.
+Part of KeyReply Kira - All rights reserved.

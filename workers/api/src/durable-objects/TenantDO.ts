@@ -1149,9 +1149,9 @@ export class TenantDO extends DurableObject {
     const now = Date.now();
 
     const id = generateRandomString(16);
-    const apiKey = `ppp_${generateRandomString(32)}`;
+    const apiKey = `kira_${generateRandomString(32)}`;
     const keyHash = await hashApiKey(apiKey);
-    const keyPrefix = apiKey.substring(0, 11); // "ppp_" + first 7 chars
+    const keyPrefix = apiKey.substring(0, 11); // "kira_" + first 6 chars
     const permissions = data.permissions ? JSON.stringify(data.permissions) : null;
     const expiresAt = data.expires_at || null;
 

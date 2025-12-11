@@ -18,7 +18,7 @@
 
 ## Overview
 
-This plan implements a **Customer Durable Object** to represent and manage the complete lifecycle of customer relationships in the PPP Academy SaaS platform. Each customer gets their own Durable Object instance with embedded SQLite storage for managing contact points (email, WhatsApp), call interactions, message history, and real-time communication.
+This plan implements a **Customer Durable Object** to represent and manage the complete lifecycle of customer relationships in the KeyReply Kira SaaS platform. Each customer gets their own Durable Object instance with embedded SQLite storage for managing contact points (email, WhatsApp), call interactions, message history, and real-time communication.
 
 **Key principles:**
 - One Durable Object per customer - complete isolation
@@ -405,7 +405,7 @@ export class CustomerDO extends DurableObject {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'PPP Academy <noreply@kira.keyreply.com>',
+          from: 'KeyReply Kira <noreply@kira.keyreply.com>',
           to: [toAddress],
           subject,
           [contentType === 'html' ? 'html' : 'text']: content,
