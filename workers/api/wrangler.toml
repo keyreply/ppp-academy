@@ -114,9 +114,15 @@ max_batch_timeout = 5
 
 
 # Workers for Platforms - Dispatch Namespace
-[[dispatch_namespaces]]
-binding = "DISPATCHER"
-namespace = "keyreply-functions"
+# NOTE: Requires Workers for Platforms subscription. Uncomment when available.
+# [[dispatch_namespaces]]
+# binding = "DISPATCHER"
+# namespace = "keyreply-functions"
+
+# Service Binding to Voice Worker (for voice AI calls)
+[[services]]
+binding = "VOICE_SERVICE"
+service = "voice-agent"
 
 # Workers AI
 [ai]

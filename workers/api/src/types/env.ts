@@ -3,7 +3,7 @@
  * Matches wrangler.toml configuration
  */
 
-import type { DurableObjectNamespace, D1Database, R2Bucket, Queue, Ai, DispatchNamespace } from '@cloudflare/workers-types';
+import type { DurableObjectNamespace, D1Database, R2Bucket, Queue, Ai, DispatchNamespace, Fetcher } from '@cloudflare/workers-types';
 
 // Queue message types
 import type { DocumentQueueMessage, AnalyticsQueueMessage, EmailQueueMessage } from './queue.ts';
@@ -79,8 +79,11 @@ export interface WorkerEnv {
   // AI binding
   AI: Ai;
 
-  // Workers for Platforms
-  DISPATCHER: DispatchNamespace;
+  // Workers for Platforms (optional - requires subscription)
+  DISPATCHER?: DispatchNamespace;
+
+  // Service Binding to Voice Worker
+  VOICE_SERVICE: Fetcher;
 
   // Environment variables
   ENVIRONMENT: 'development' | 'production';

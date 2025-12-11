@@ -39,6 +39,7 @@ import campaignsRouter from './routes/campaigns.ts';
 import workflowsRouter from './routes/workflows.ts';
 import channelsRouter from './routes/channels.ts';
 import functionRouter from './routes/functionRouter.ts';
+import voiceRouter from './routes/voice.ts';
 import { sendEmail, getEmailTemplate } from './services/email.ts';
 
 // Import AI configuration
@@ -145,6 +146,7 @@ app.route('/campaigns', campaignsRouter);
 app.route('/workflows', workflowsRouter);
 app.route('/channels', channelsRouter);
 app.route('/functions', functionRouter);
+app.route('/voice', voiceRouter);
 
 // Mount analytics route
 app.route('/analytics', analyticsRouter);

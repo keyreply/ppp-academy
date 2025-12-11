@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
     ReactFlow,
     Controls,
@@ -21,8 +21,45 @@ import {
     EnvelopeIcon,
     BellIcon,
     TagIcon,
-    PlusCircleIcon
+    PlusCircleIcon,
+    CommandLineIcon,
+    SparklesIcon,
+    XMarkIcon,
+    ArrowPathIcon
 } from '@heroicons/react/24/outline';
+
+// Types
+interface WorkflowNode {
+    id: string;
+    type: string;
+    position: { x: number; y: number };
+    data: {
+        label: string;
+        nodeType?: string;
+        functionName?: string;
+        code?: string;
+        inputMapping?: Record<string, string>;
+        outputVariable?: string;
+        timeout?: number;
+    };
+}
+
+interface WorkflowEdge {
+    id: string;
+    source: string;
+    target: string;
+}
+
+interface RunCodeConfigPanelProps {
+    node: WorkflowNode;
+    onUpdate: (node: WorkflowNode) => void;
+    onClose: () => void;
+}
+
+interface WorkflowEditorProps {
+    workflowId?: string;
+    onClose: () => void;
+}
 
 const initialNodes = [
     {
@@ -33,7 +70,7 @@ const initialNodes = [
     },
 ];
 
-const initialEdges = [];
+const initialEdges: WorkflowEdge[] = [];
 
 // Node palette configuration
 const nodeTypes = [
@@ -60,16 +97,281 @@ const nodeTypes = [
             { type: 'condition', label: 'Condition', icon: CodeBracketIcon, color: '#34DBAE' },
             { type: 'delay', label: 'Delay', icon: ClockIcon, color: '#34DBAE' },
         ]
+    },
+    {
+        category: 'Advanced',
+        items: [
+            { type: 'run_code', label: 'Run Code', icon: CommandLineIcon, color: '#8B5CF6' },
+        ]
     }
 ];
 
-export default function WorkflowEditor({ workflowId, onClose }) {
+// RunCode node configuration panel
+function RunCodeConfigPanel({ node, onUpdate, onClose }: RunCodeConfigPanelProps) {
+    const [functionName, setFunctionName] = useState(node?.data?.functionName || '');
+    const [code, setCode] = useState(node?.data?.code || '');
+    const [inputMapping, setInputMapping] = useState(node?.data?.inputMapping || {});
+    const [outputVariable, setOutputVariable] = useState(node?.data?.outputVariable || 'codeResult');
+    const [timeout, setTimeout] = useState(node?.data?.timeout || 10000);
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generationError, setGenerationError] = useState('');
+
+    const handleGenerateCode = async () => {
+        if (!aiPrompt.trim()) return;
+
+        setIsGenerating(true);
+        setGenerationError('');
+
+        try {
+            const response = await api.functions.generateCode({
+                prompt: aiPrompt,
+                existingCode: code || undefined,
+                context: {
+                    functionName: functionName || 'workflow_function',
+                    inputVariables: Object.keys(inputMapping),
+                    outputVariables: [outputVariable],
+                },
+            });
+
+            if (response.success && response.code) {
+                setCode(response.code);
+            } else {
+                setGenerationError(response.error || 'Failed to generate code');
+            }
+        } catch (err: unknown) {
+            setGenerationError((err as Error).message || 'Failed to generate code');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleSave = () => {
+        onUpdate({
+            ...node,
+            data: {
+                ...node.data,
+                functionName,
+                code,
+                inputMapping,
+                outputVariable,
+                timeout,
+            }
+        });
+        onClose();
+    };
+
+    const addInputMapping = () => {
+        const key = `input${Object.keys(inputMapping).length + 1}`;
+        setInputMapping({ ...inputMapping, [key]: '' });
+    };
+
+    const updateInputMapping = (oldKey: string, newKey: string, value: string) => {
+        const updated = { ...inputMapping };
+        if (oldKey !== newKey) {
+            delete updated[oldKey];
+        }
+        updated[newKey] = value;
+        setInputMapping(updated);
+    };
+
+    const removeInputMapping = (key: string) => {
+        const updated = { ...inputMapping };
+        delete updated[key];
+        setInputMapping(updated);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-2xl w-[800px] max-h-[90vh] overflow-hidden flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-violet-50 to-purple-50">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
+                            <CommandLineIcon className="w-5 h-5 text-violet-600" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-semibold text-slate-900">Configure Run Code Step</h2>
+                            <p className="text-sm text-slate-500">Execute custom JavaScript in your workflow</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                        <XMarkIcon className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {/* Function Name */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Function Name</label>
+                        <input
+                            type="text"
+                            value={functionName}
+                            onChange={(e) => setFunctionName(e.target.value)}
+                            placeholder="my_custom_function"
+                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+                        />
+                        <p className="text-xs text-slate-500 mt-1">This will be used as the Platform Function name</p>
+                    </div>
+
+                    {/* AI Code Generation */}
+                    <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-4 border border-violet-100">
+                        <div className="flex items-center gap-2 mb-3">
+                            <SparklesIcon className="w-5 h-5 text-violet-600" />
+                            <span className="font-medium text-violet-900">AI Code Generation</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={aiPrompt}
+                                onChange={(e) => setAiPrompt(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && !isGenerating && handleGenerateCode()}
+                                placeholder="Describe what the code should do, e.g., 'Fetch user data from API and calculate score'"
+                                className="flex-1 px-4 py-2.5 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-white transition-colors"
+                            />
+                            <button
+                                onClick={handleGenerateCode}
+                                disabled={isGenerating || !aiPrompt.trim()}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                                        Generating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <SparklesIcon className="w-4 h-4" />
+                                        Generate
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                        {generationError && (
+                            <p className="text-sm text-red-600 mt-2">{generationError}</p>
+                        )}
+                    </div>
+
+                    {/* Code Editor */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Function Code</label>
+                        <textarea
+                            value={code}
+                            onChange={(e) => setCode(e.target.value)}
+                            rows={12}
+                            placeholder={`export default async function handler(input) {
+  const { __context, ...userInput } = input;
+
+  // Your code here
+
+  return result;
+}`}
+                            className="w-full px-4 py-3 font-mono text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-slate-900 text-green-400 transition-colors"
+                            style={{ tabSize: 2 }}
+                        />
+                    </div>
+
+                    {/* Input Mapping */}
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-medium text-slate-700">Input Mapping</label>
+                            <button
+                                onClick={addInputMapping}
+                                className="text-sm text-violet-600 hover:text-violet-700 font-medium"
+                            >
+                                + Add Input
+                            </button>
+                        </div>
+                        <div className="space-y-2">
+                            {Object.entries(inputMapping).map(([key, value]) => (
+                                <div key={key} className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={key}
+                                        onChange={(e) => updateInputMapping(key, e.target.value, value as string)}
+                                        placeholder="Parameter name"
+                                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500"
+                                    />
+                                    <span className="flex items-center text-slate-400">=</span>
+                                    <input
+                                        type="text"
+                                        value={value as string}
+                                        onChange={(e) => updateInputMapping(key, key, e.target.value)}
+                                        placeholder="customer.email"
+                                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500"
+                                    />
+                                    <button
+                                        onClick={() => removeInputMapping(key)}
+                                        className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                                    >
+                                        <XMarkIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                            {Object.keys(inputMapping).length === 0 && (
+                                <p className="text-sm text-slate-500 italic">No input mappings defined. Click "Add Input" to map workflow variables to function parameters.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Output Variable */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Output Variable</label>
+                            <input
+                                type="text"
+                                value={outputVariable}
+                                onChange={(e) => setOutputVariable(e.target.value)}
+                                placeholder="codeResult"
+                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Timeout (ms)</label>
+                            <input
+                                type="number"
+                                value={timeout}
+                                onChange={(e) => setTimeout(parseInt(e.target.value) || 10000)}
+                                min={1000}
+                                max={30000}
+                                step={1000}
+                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-slate-600 hover:text-slate-800 font-medium transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={!functionName.trim() || !code.trim()}
+                        className="flex items-center gap-2 px-5 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    >
+                        <CheckCircleIcon className="w-4 h-4" />
+                        Save Configuration
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default function WorkflowEditor({ workflowId, onClose }: WorkflowEditorProps) {
     const [nodes, setNodes] = useState(initialNodes);
     const [edges, setEdges] = useState(initialEdges);
     const [name, setName] = useState("New Workflow");
     const [triggerType, setTriggerType] = useState("page_view");
     const [saving, setSaving] = useState(false);
     const [isActive, setIsActive] = useState(true);
+    const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
 
     useEffect(() => {
         if (workflowId) {
@@ -124,16 +426,39 @@ export default function WorkflowEditor({ workflowId, onClose }) {
             };
 
             const newNode = {
-                id: `${nodes.length + 1}`,
+                id: `node_${Date.now()}`,
                 type: 'default',
                 position,
-                data: { label: data.label },
+                data: {
+                    label: data.label,
+                    nodeType: data.nodeType,
+                },
             };
 
             setNodes((nds) => nds.concat(newNode));
+
+            // If it's a run_code node, open the config panel immediately
+            if (data.nodeType === 'run_code') {
+                setSelectedNode(newNode);
+            }
         },
         [nodes],
     );
+
+    const onNodeClick = useCallback((event, node) => {
+        // Only open config panel for run_code nodes
+        if (node.data?.nodeType === 'run_code') {
+            setSelectedNode(node);
+        }
+    }, []);
+
+    const handleNodeUpdate = useCallback((updatedNode) => {
+        setNodes((nds) =>
+            nds.map((node) =>
+                node.id === updatedNode.id ? updatedNode : node
+            )
+        );
+    }, []);
 
     const onDragOver = useCallback((event) => {
         event.preventDefault();
@@ -294,6 +619,7 @@ export default function WorkflowEditor({ workflowId, onClose }) {
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}
                         onConnect={onConnect}
+                        onNodeClick={onNodeClick}
                         fitView
                         className="bg-slate-50"
                     >
@@ -302,6 +628,15 @@ export default function WorkflowEditor({ workflowId, onClose }) {
                     </ReactFlow>
                 </div>
             </div>
+
+            {/* Run Code Configuration Panel */}
+            {selectedNode && selectedNode.data?.nodeType === 'run_code' && (
+                <RunCodeConfigPanel
+                    node={selectedNode}
+                    onUpdate={handleNodeUpdate}
+                    onClose={() => setSelectedNode(null)}
+                />
+            )}
         </div>
     );
 }

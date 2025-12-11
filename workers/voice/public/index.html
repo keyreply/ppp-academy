@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KeyReply Voice Agent - Enterprise AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Brand Color System */
+      --primary: #37CFFF;
+      /* Key Blue */
+      --primary-hover: #2dbbf7;
+      /* Slightly darker shade of Key Blue */
+      --secondary: #1D57D8;
+      /* Secondary Blue */
+      --accent: #34DBAE;
+      /* Mint */
+      --success: #5DE530;
+      /* Key Green */
+      --neutral: #565856;
+      /* Neutral Gray */
+      --core-dark: #111722;
+      /* Core Black/Navy */
+
+      /* UI Semantics */
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: var(--core-dark);
+      --text-muted: var(--neutral);
+      --border: #e2e8f0;
+
+      --error: #ef4444;
+      --warning: #f59e0b;
+
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Satoshi Uncut', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 20px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 32px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--core-dark);
+      letter-spacing: -0.01em;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .status-badge.disconnected {
+      background: #f1f5f9;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .status-badge.connecting {
+      background: #fffbeb;
+      color: var(--warning);
+      border: 1px solid #fcd34d;
+    }
+
+    .status-badge.connected {
+      background: #f0fdf4;
+      color: #15803d;
+      /* Darker green for text readability */
+      border: 1px solid var(--success);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-badge.connecting .status-dot {
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
+    }
+
+    .controls {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      filter: grayscale(100%);
+    }
+
+    /* Primary Button: Key Blue background, Dark text */
+    .btn-primary {
+      background: var(--primary);
+      color: var(--core-dark);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-danger {
+      background: #fff1f2;
+      color: var(--error);
+      border: 1px solid #fecdd3;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #ffe4e6;
+      border-color: #fda4af;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .conversation {
+      height: 450px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      background: #f8fafc;
+      /* Keep conversation area distinct */
+    }
+
+    .message {
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      max-width: 100%;
+    }
+
+    .message.user {
+      align-items: flex-end;
+    }
+
+    .message.agent {
+      align-items: flex-start;
+    }
+
+    .message-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .message-content {
+      max-width: 80%;
+      padding: 16px 20px;
+      border-radius: 16px;
+      line-height: 1.6;
+      font-size: 1rem;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .message.user .message-content {
+      background: var(--secondary);
+      /* Use Secondary Blue for User bubbles for contrast */
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.agent .message-content {
+      background: white;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+    }
+
+    .message.interim .message-content {
+      opacity: 0.7;
+      border: 1px dashed var(--border);
+    }
+
+    .visualizer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 80px;
+      background: var(--bg);
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .visualizer-bar {
+      width: 6px;
+      background: var(--primary);
+      /* Key Blue bars */
+      border-radius: 3px;
+      transition: height 0.05s ease;
+    }
+
+    .lead-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+    }
+
+    .lead-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .lead-field label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .lead-field span {
+      font-weight: 500;
+      font-size: 1.05rem;
+      color: var(--core-dark);
+    }
+
+    .qualification-bar {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .qualification-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--warning), var(--success));
+      transition: width 0.5s ease-out;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .input-row input {
+      flex: 1;
+      padding: 14px 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 1rem;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+
+    .input-row input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(55, 207, 255, 0.15);
+      /* Key Blue focus ring */
+    }
+
+    .stage-indicator {
+      display: inline-block;
+      padding: 6px 14px;
+      background: #e0f2fe;
+      /* Light blue bg */
+      color: var(--secondary);
+      /* Dark blue text */
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .error-banner {
+      background: #fef2f2;
+      color: var(--error);
+      padding: 16px;
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      display: none;
+      border: 1px solid #fee2e2;
+    }
+
+    .error-banner.show {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        transform: translateY(-10px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .log-panel {
+      background: var(--core-dark);
+      color: #cbd5e1;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.8rem;
+      padding: 16px;
+      border-radius: var(--radius);
+      height: 200px;
+      overflow-y: auto;
+      margin-top: 20px;
+      border: 1px solid var(--neutral);
+    }
+
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .log-entry.error {
+      color: #f87171;
+    }
+
+    .log-entry.warn {
+      color: #fbbf24;
+    }
+
+    .log-entry.success {
+      color: var(--success);
+    }
+
+    .log-entry.info {
+      color: #93c5fd;
+    }
+
+    .log-time {
+      color: #64748b;
+      margin-right: 12px;
+      display: inline-block;
+      min-width: 80px;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .debug-panel {
+      margin-top: 40px;
+      border-top: none;
+      padding-top: 0;
+      background: #f1f5f9;
+    }
+
+    .session-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: white;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      border: 1px solid var(--border);
+    }
+
+    .session-id {
+      font-family: monospace;
+      font-weight: 600;
+      color: var(--core-dark);
+    }
+
+    .session-status.active {
+      background: var(--success);
+    }
+
+    .session-status.ended {
+      background: var(--text-muted);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>KeyReply Voice Agent</h1>
+      <p>Next-Gen AI Patient Engagement Platform</p>
+    </header>
+
+    <div id="errorBanner" class="error-banner"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Connection</span>
+        <span id="statusBadge" class="status-badge disconnected">
+          <span class="status-dot"></span>
+          <span id="statusText">Disconnected</span>
+        </span>
+      </div>
+
+      <div class="visualizer" id="visualizer"></div>
+
+      <div class="controls">
+        <button id="startBtn" class="btn-primary" onclick="startCall()">
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+          </svg>
+          Start Interaction
+        </button>
+        <button id="endBtn" class="btn-danger" onclick="endCall()" disabled>
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.28 3H5z" />
+          </svg>
+          End Interaction
+        </button>
+        <button id="muteBtn" class="btn-secondary" onclick="toggleMute()" disabled>
+          <svg id="muteIcon" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
+          Mute
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Conversation Context</span>
+        <span id="stageIndicator" class="stage-indicator">Initializing</span>
+      </div>
+      <div id="conversation" class="conversation">
+        <div class="message agent">
+          <span class="message-label">KeyReply Assistant</span>
+          <div class="message-content">System ready. Click "Start Interaction" to begin.</div>
+        </div>
+      </div>
+      <div class="input-row">
+        <input type="text" id="textInput" placeholder="Type a message (debug mode)..."
+          onkeydown="handleTextInput(event)">
+        <button class="btn-primary" onclick="sendTextMessage()">Send</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Captured Information</span>
+        <span>Score: <strong id="qualScore">0</strong>/100</span>
+      </div>
+      <div class="qualification-bar">
+        <div id="qualFill" class="qualification-fill" style="width: 0%"></div>
+      </div>
+      <div class="lead-info" style="margin-top: 24px;">
+        <div class="lead-field">
+          <label>Name</label>
+          <span id="leadName">—</span>
+        </div>
+        <div class="lead-field">
+          <label>Query Type</label>
+          <span id="leadPropertyType">—</span>
+        </div>
+        <div class="lead-field">
+          <label>Details</label>
+          <span id="leadLocations">—</span>
+        </div>
+        <div class="lead-field">
+          <label>Budget / Range</label>
+          <span id="leadBudget">—</span>
+        </div>
+        <div class="lead-field">
+          <label>Timeline</label>
+          <span id="leadTimeline">—</span>
+        </div>
+        <div class="lead-field">
+          <label>Contact</label>
+          <span id="leadEmail">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">System Logs</span>
+        <button class="btn-secondary" onclick="clearLog()" style="padding: 6px 12px; font-size: 0.8rem;">Clear</button>
+      </div>
+      <div id="logPanel" class="log-panel"></div>
+    </div>
+
+    <div class="card debug-panel">
+      <div class="card-header">
+        <span class="card-title">Active Sessions (Debug)</span>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <span id="minimaxStatus" style="font-size: 0.8rem; color: var(--text-muted);">Checking TTS Status...</span>
+          <button class="btn-secondary" onclick="fetchSessions()"
+            style="padding: 6px 12px; font-size: 0.8rem;">Refresh</button>
+        </div>
+      </div>
+      <div id="sessionList">
+        <div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 10px;">Loading sessions...
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      &copy; 2025 KeyReply. All rights reserved. | Enterprise Voice AI
+    </footer>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let sessionId = null;
+    let mediaStream = null;
+    let audioContext = null;
+    let analyser = null;
+    let processor = null;
+    let ws = null;
+    let isMuted = false;
+
+    // Initial fetch
+    fetchSessions();
+    checkMinimaxStatus();
+    setInterval(fetchSessions, 5000); // Auto-refresh every 5s
+
+    async function checkMinimaxStatus() {
+      const el = document.getElementById('minimaxStatus');
+      try {
+        const res = await fetch(API_BASE + '/api/validate-config');
+        const data = await res.json();
+        if (data.success) {
+          el.innerHTML = '<span style="color: var(--success)">✓ TTS Connected</span>';
+        } else {
+          el.innerHTML = '<span style="color: var(--error)">⚠ TTS Error: ' + data.message + '</span>';
+        }
+      } catch (e) {
+        el.innerHTML = '<span style="color: var(--error)">⚠ Connection Failed</span>';
+      }
+    }
+
+    async function fetchSessions() {
+      try {
+        const res = await fetch(API_BASE + '/api/sessions');
+        const data = await res.json();
+
+        const list = document.getElementById('sessionList');
+        if (!data.sessions || data.sessions.length === 0) {
+          list.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 10px;">No active sessions found</div>';
+          return;
+        }
+
+        list.innerHTML = data.sessions.map(s =>
+          '<div class="session-item">' +
+          '<div>' +
+          '<span class="session-status ' + s.status + '"></span>' +
+          '<span class="session-id">' + s.sessionId + '</span>' +
+          '</div>' +
+          '<div>' +
+          '<span style="color: var(--text-muted); margin-right: 10px;">' + s.callCount + ' calls</span>' +
+          '<span style="color: var(--text-muted);">' + new Date(s.lastUpdate).toLocaleTimeString() + '</span>' +
+          '</div>' +
+          '</div>'
+        ).join('');
+      } catch (e) {
+        console.error('Failed to fetch sessions:', e);
+      }
+    }
+    let audioQueue = [];
+    let isPlayingAudio = false;
+
+    const statusBadge = document.getElementById('statusBadge');
+    const statusText = document.getElementById('statusText');
+    const startBtn = document.getElementById('startBtn');
+    const endBtn = document.getElementById('endBtn');
+    const muteBtn = document.getElementById('muteBtn');
+    const conversation = document.getElementById('conversation');
+    const visualizer = document.getElementById('visualizer');
+    const errorBanner = document.getElementById('errorBanner');
+    const textInput = document.getElementById('textInput');
+    const stageIndicator = document.getElementById('stageIndicator');
+    const logPanel = document.getElementById('logPanel');
+
+    function log(message, level = 'info') {
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = 'log-entry ' + level;
+      entry.innerHTML = '<span class="log-time">[' + time + ']</span>' + message;
+      logPanel.appendChild(entry);
+      logPanel.scrollTop = logPanel.scrollHeight;
+      console.log('[' + level.toUpperCase() + ']', message);
+    }
+
+    function clearLog() {
+      logPanel.innerHTML = '';
+      log('Log cleared', 'info');
+    }
+
+    function initVisualizer() {
+      visualizer.innerHTML = '';
+      for (let i = 0; i < 40; i++) {
+        const bar = document.createElement('div');
+        bar.className = 'visualizer-bar';
+        bar.style.height = '4px';
+        visualizer.appendChild(bar);
+      }
+    }
+
+    function updateVisualizer() {
+      if (!analyser) return;
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(dataArray);
+      const bars = visualizer.querySelectorAll('.visualizer-bar');
+      const step = Math.floor(dataArray.length / bars.length);
+      bars.forEach((bar, i) => {
+        const value = dataArray[i * step];
+        const height = Math.max(4, (value / 255) * 60);
+        bar.style.height = height + 'px';
+      });
+      if (sessionId) requestAnimationFrame(updateVisualizer);
+    }
+
+    function setStatus(status) {
+      statusBadge.className = 'status-badge ' + status;
+      statusText.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+    }
+
+    function showError(message) {
+      errorBanner.textContent = message;
+      errorBanner.classList.add('show');
+      setTimeout(() => errorBanner.classList.remove('show'), 5000);
+    }
+
+    function addMessage(role, text, isInterim = false) {
+      const lastMessage = conversation.lastElementChild;
+      if (lastMessage && lastMessage.dataset.role === role && lastMessage.classList.contains('interim')) {
+        lastMessage.querySelector('.message-content').textContent = text;
+        if (!isInterim) {
+          lastMessage.classList.remove('interim');
+        }
+        return;
+      }
+
+      const div = document.createElement('div');
+      div.className = 'message ' + role + (isInterim ? ' interim' : '');
+      div.dataset.role = role;
+      div.innerHTML = '<span class="message-label">' + (role === 'user' ? 'User' : 'KeyReply Agent') + '</span><div class="message-content">' + text + '</div>';
+      conversation.appendChild(div);
+      conversation.scrollTop = conversation.scrollHeight;
+    }
+
+    function updateLeadInfo(leadInfo) {
+      if (!leadInfo) return;
+      document.getElementById('leadName').textContent = leadInfo.name || '—';
+      document.getElementById('leadPropertyType').textContent = leadInfo.propertyPreferences?.type || '—';
+      document.getElementById('leadLocations').textContent = leadInfo.propertyPreferences?.locations?.join(', ') || '—';
+      document.getElementById('leadBudget').textContent = leadInfo.budget ? '$' + (leadInfo.budget.min?.toLocaleString() || '?') + ' - $' + (leadInfo.budget.max?.toLocaleString() || '?') : '—';
+      document.getElementById('leadTimeline').textContent = leadInfo.timeline || '—';
+      document.getElementById('leadEmail').textContent = leadInfo.email || '—';
+      const score = leadInfo.qualificationScore || 0;
+      document.getElementById('qualScore').textContent = score;
+      document.getElementById('qualFill').style.width = score + '%';
+    }
+
+    function updateStage(stage) {
+      const stageNames = {
+        greeting: 'Greeting',
+        introduction: 'Introduction',
+        needs_discovery: 'Needs Discovery',
+        qualification: 'Qualification',
+        property_discussion: 'Property Discussion',
+        next_steps: 'Next Steps',
+        closing: 'Closing',
+        follow_up: 'Follow Up'
+      };
+      stageIndicator.textContent = stageNames[stage] || stage;
+    }
+
+    async function startCall() {
+      try {
+        log('Starting connection...', 'info');
+        setStatus('connecting');
+        startBtn.disabled = true;
+        sessionId = 'web-' + Date.now();
+
+        // Step 1: Check API health
+        log('Checking system health...', 'info');
+        try {
+          const healthResponse = await fetch(API_BASE + '/health');
+          if (!healthResponse.ok) {
+            throw new Error('Health check failed: ' + healthResponse.status);
+          }
+          const healthData = await healthResponse.json();
+          log('System healthy', 'success');
+        } catch (e) {
+          log('Health check failed: ' + e.message, 'error');
+          throw new Error('Cannot connect to server');
+        }
+
+        // Step 2: Initialize session
+        log('Initializing session: ' + sessionId, 'info');
+        const initResponse = await fetch(API_BASE + '/session/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: sessionId })
+        });
+
+        if (!initResponse.ok) {
+          const errorText = await initResponse.text();
+          log('Session init failed: ' + errorText, 'error');
+          throw new Error('Failed to initialize session');
+        }
+
+        const initData = await initResponse.json();
+        log('Session initialized', 'success');
+        updateLeadInfo(initData.session.leadInfo);
+        updateStage(initData.session.currentStage);
+
+        // Step 3: Request microphone access
+        log('Requesting audio access...', 'info');
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 }
+          });
+          log('Audio access granted', 'success');
+        } catch (e) {
+          log('Audio access denied: ' + e.message, 'error');
+          throw new Error('Microphone access denied');
+        }
+
+        // Step 4: Setup audio context
+        log('Configuring audio stream...', 'info');
+        audioContext = new AudioContext({ sampleRate: 16000 });
+        const source = audioContext.createMediaStreamSource(mediaStream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+
+        processor = audioContext.createScriptProcessor(4096, 1, 1);
+        processor.onaudioprocess = function (e) {
+          if (isMuted || !ws || ws.readyState !== WebSocket.OPEN) return;
+          const inputData = e.inputBuffer.getChannelData(0);
+          const pcmData = new Int16Array(inputData.length);
+          for (let i = 0; i < inputData.length; i++) {
+            pcmData[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+          }
+          ws.send(pcmData.buffer);
+        };
+        source.connect(processor);
+        processor.connect(audioContext.destination);
+        log('Audio stream ready', 'success');
+
+        // Step 5: Connect WebSocket
+        const wsUrl = API_BASE.replace('http', 'ws') + '/ws/' + sessionId;
+        log('Connecting WebSocket...', 'info');
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = function () {
+          log('WebSocket connected', 'success');
+          setStatus('connected');
+          endBtn.disabled = false;
+          muteBtn.disabled = false;
+          updateVisualizer();
+          conversation.innerHTML = '';
+          // Greeting will be sent by the server
+        };
+
+        ws.onmessage = async function (event) {
+          if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
+            const buffer = event.data instanceof Blob ? await event.data.arrayBuffer() : event.data;
+            log('Received audio: ' + buffer.byteLength + ' bytes', 'info');
+            playAudio(buffer);
+          } else {
+            try {
+              const data = JSON.parse(event.data);
+              log('Received message: ' + data.type, 'info');
+              handleServerMessage(data);
+            } catch (e) {
+              log('Parse error: ' + e.message, 'warn');
+            }
+          }
+        };
+
+        ws.onerror = function (event) {
+          log('WebSocket error', 'error');
+          showError('Connection error. Please try again.');
+        };
+
+        ws.onclose = function (event) {
+          log('WebSocket closed', 'info');
+          if (sessionId) setStatus('disconnected');
+        };
+
+      } catch (error) {
+        log('Call failed: ' + error.message, 'error');
+        showError(error.message);
+        setStatus('disconnected');
+        startBtn.disabled = false;
+        sessionId = null;
+      }
+    }
+
+    function handleServerMessage(data) {
+      switch (data.type) {
+        case 'transcript':
+          addMessage('user', data.text, !data.isFinal);
+          break;
+        case 'agent_text':
+          if (data.text) addMessage('agent', data.text, !data.isFinal);
+          break;
+        case 'state_update':
+          if (data.leadInfo) updateLeadInfo(data.leadInfo);
+          if (data.currentStage) updateStage(data.currentStage);
+          break;
+        case 'error':
+          log('Server error: ' + data.message, 'error');
+          showError(data.message);
+          break;
+        case 'greeting':
+          log('Greeting received: ' + data.text.substring(0, 50) + '...', 'success');
+          addMessage('agent', data.text);
+          break;
+        case 'start_of_turn':
+          log('User started speaking (turn ' + data.turnIndex + ')', 'info');
+          break;
+        case 'end_of_turn':
+          log('User finished speaking', 'info');
+          break;
+        case 'barge_in':
+          log('Barge-in detected!', 'warn');
+          break;
+        default:
+          log('Unknown message type: ' + data.type, 'warn');
+      }
+    }
+
+    async function playAudio(buffer) {
+      audioQueue.push(buffer);
+      if (!isPlayingAudio) playNextAudio();
+    }
+
+    async function ensureAudioContext() {
+      if (!audioContext) {
+        audioContext = new AudioContext({ sampleRate: 16000 });
+        log('AudioContext created for playback', 'info');
+      }
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+        log('AudioContext resumed', 'info');
+      }
+      return audioContext;
+    }
+
+    async function playNextAudio() {
+      if (audioQueue.length === 0) {
+        isPlayingAudio = false;
+        return;
+      }
+      isPlayingAudio = true;
+      const buffer = audioQueue.shift();
+      try {
+        const ctx = await ensureAudioContext();
+        const pcmData = new Int16Array(buffer);
+        const floatData = new Float32Array(pcmData.length);
+        for (let i = 0; i < pcmData.length; i++) {
+          floatData[i] = pcmData[i] / 32768;
+        }
+        const audioBuffer = ctx.createBuffer(1, floatData.length, 16000);
+        audioBuffer.getChannelData(0).set(floatData);
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(ctx.destination);
+        source.onended = playNextAudio;
+        source.start();
+        log('Playing audio chunk (' + floatData.length + ' samples)', 'info');
+      } catch (e) {
+        log('Audio playback error: ' + e.message, 'error');
+        playNextAudio();
+      }
+    }
+
+    async function endCall() {
+      log('Ending session...', 'info');
+      if (ws) { ws.close(); ws = null; }
+      if (mediaStream) { mediaStream.getTracks().forEach(function (t) { t.stop(); }); mediaStream = null; }
+      if (audioContext) { audioContext.close(); audioContext = null; }
+      if (sessionId) {
+        fetch(API_BASE + '/session/' + sessionId + '/end', { method: 'POST' })
+          .catch(function (e) { log('Error ending session: ' + e.message, 'warn'); });
+      }
+      sessionId = null;
+      setStatus('disconnected');
+      startBtn.disabled = false;
+      endBtn.disabled = true;
+      muteBtn.disabled = true;
+      addMessage('agent', 'Session ended.');
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      if (mediaStream) mediaStream.getAudioTracks().forEach(function (t) { t.enabled = !isMuted; });
+      muteBtn.innerHTML = isMuted
+        ? '<svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg> Unmute'
+        : '<svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg> Mute';
+    }
+
+    async function sendTextMessage() {
+      const text = textInput.value.trim();
+      if (!text) return;
+
+      textInput.value = '';
+      log('Sending: "' + text + '"', 'info');
+
+      // Initialize session if needed
+      if (!sessionId) {
+        sessionId = 'text-' + Date.now();
+        try {
+          const initResp = await fetch(API_BASE + '/session/init', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: sessionId })
+          });
+          if (!initResp.ok) throw new Error('Init failed');
+        } catch (e) {
+          log('Failed to init session', 'error');
+          return;
+        }
+      }
+
+      addMessage('user', text);
+
+      try {
+        const response = await fetch(API_BASE + '/session/' + sessionId + '/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text })
+        });
+
+        if (!response.ok) throw new Error('Message failed');
+
+        const data = await response.json();
+        if (data.response) addMessage('agent', data.response);
+        if (data.session) {
+          updateLeadInfo(data.session.leadInfo);
+          updateStage(data.session.currentStage);
+        }
+      } catch (error) {
+        log('Error: ' + error.message, 'error');
+        showError('Delivery failed');
+      }
+    }
+
+    function handleTextInput(event) {
+      if (event.key === 'Enter') sendTextMessage();
+    }
+
+    async function purgeSessions() {
+      if (!confirm('Are you sure you want to purge ALL active sessions?')) return;
+
+      try {
+        log('Purging all sessions...', 'info');
+        const resp = await fetch(API_BASE + '/api/sessions', { method: 'DELETE' });
+        const data = await resp.json();
+
+        if (data.success) {
+          log('All sessions purged.', 'success');
+          // Refresh list if it's visible, or just clear UI
+          updateActiveSessionsList([]);
+        } else {
+          showError('Purge failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (e) {
+        showError('Purge error: ' + e.message);
+      }
+    }
+
+    initVisualizer();
+  </script>
+</body>
+
+</html>

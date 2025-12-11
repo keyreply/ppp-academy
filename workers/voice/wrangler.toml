@@ -1,0 +1,64 @@
+# Cloudflare Voice Agent Configuration
+# See: https://developers.cloudflare.com/workers/wrangler/configuration/
+
+name = "voice-agent"
+account_id = "2e25a3c929c0317b8c569a9e7491cf78"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Enable Workers AI for speech models
+[ai]
+binding = "AI"
+remote = true
+
+[assets]
+directory = "public"
+binding = "ASSETS"
+
+# Durable Objects for session state persistence
+[[durable_objects.bindings]]
+name = "VOICE_SESSION"
+class_name = "VoiceSessionDurableObject"
+
+[[durable_objects.bindings]]
+name = "SESSION_REGISTRY"
+class_name = "SessionRegistryDurableObject"
+
+# Migrations for Durable Objects
+[[migrations]]
+tag = "v1"
+new_classes = ["VoiceSessionDurableObject"]
+
+[[migrations]]
+tag = "v2"
+new_classes = ["SessionRegistryDurableObject"]
+
+# Environment variables (set via wrangler secret)
+# XAI_API_KEY - xAI API key for Grok LLM
+# MINIMAX_API_KEY - Minimax API key for TTS
+# DEEPGRAM_API_KEY - Deepgram API key for STT (if not using Workers AI)
+
+# Development environment
+[env.dev]
+name = "voice-agent-dev"
+vars = { ENVIRONMENT = "development" }
+
+# Staging environment
+[env.staging]
+name = "voice-agent-staging"
+vars = { ENVIRONMENT = "staging" }
+
+# Production environment
+[env.production]
+name = "voice-agent"
+vars = { ENVIRONMENT = "production" }
+
+# Observability
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# Limits
+[limits]
+cpu_ms = 30000

@@ -234,7 +234,8 @@ class ApiClient {
   /* Workflows */
   workflows = {
     list: (): Promise<{ workflows: Workflow[] }> => this.get('/workflows'),
-    get: (id: string): Promise<Workflow> => this.get(`/workflows/${id}`),
+    get: (id: string): Promise<{ workflow: Workflow & { trigger_type?: string; is_active?: boolean; definition?: { nodes: unknown[]; edges: unknown[] } } }> =>
+      this.get(`/workflows/${id}`),
     create: (data: Partial<Workflow>): Promise<{ workflow: Workflow }> => this.post('/workflows', data),
     update: (id: string, data: Partial<Workflow>): Promise<{ workflow: Workflow }> =>
       this.put(`/workflows/${id}`, data),
@@ -257,6 +258,29 @@ class ApiClient {
       this.post('/auth/register', data),
     logout: (): Promise<{ success: boolean }> => this.post('/auth/logout', {}),
     me: (): Promise<AuthUser> => this.get('/auth/me')
+  };
+
+  /* Platform Functions */
+  functions = {
+    list: (): Promise<{ success: boolean; data: Array<{ name: string; created_on: string }> }> =>
+      this.get('/functions'),
+    upload: (name: string, script: string): Promise<{ success: boolean; message: string }> =>
+      this.post('/functions', { name, script }),
+    delete: (name: string): Promise<{ success: boolean; message: string }> =>
+      this.delete(`/functions/${name}`),
+    execute: (name: string, payload: unknown): Promise<{ success: boolean; result: unknown }> =>
+      this.post(`/functions/${name}/execute`, payload),
+    generateCode: (data: {
+      prompt: string;
+      existingCode?: string;
+      context?: {
+        functionName?: string;
+        description?: string;
+        inputVariables?: string[];
+        outputVariables?: string[];
+      };
+    }): Promise<{ success: boolean; code?: string; error?: string }> =>
+      this.post('/functions/generate', data)
   };
 }
 
