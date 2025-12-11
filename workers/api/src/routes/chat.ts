@@ -415,7 +415,7 @@ Use this context to provide accurate answers. If the context doesn't contain rel
     });
 
     // Return streaming response compatible with useChat
-    // In AI SDK v6, use toUIMessageStreamResponse for useChat compatibility
+    // AI SDK v6 uses toUIMessageStreamResponse for useChat
     return result.toUIMessageStreamResponse({
       headers: {
         'X-Knowledge-Source': source,

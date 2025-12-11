@@ -362,7 +362,20 @@ const AgentPanel: React.FC<AgentPanelProps> = ({
                     {/* Messages */}
                     <Conversation className="flex-1 bg-slate-50/30">
                         <ConversationContent className="p-4 gap-4">
-                            {messages.map((msg, index) => (
+                            {messages.map((msg, index) => {
+                                // AI SDK v6: Extract text from parts array or fallback to content string
+                                const getMessageText = () => {
+                                    if (msg.parts && Array.isArray(msg.parts)) {
+                                        return msg.parts
+                                            .filter((p: { type: string }) => p.type === 'text')
+                                            .map((p: { type: string; text?: string }) => p.text || '')
+                                            .join('');
+                                    }
+                                    return msg.content || '';
+                                };
+                                const messageText = getMessageText();
+
+                                return (
                                 <Message key={msg.id} from={msg.role}>
                                     {msg.role === 'assistant' && (
                                         <div className="flex gap-2">
@@ -371,13 +384,13 @@ const AgentPanel: React.FC<AgentPanelProps> = ({
                                             </div>
                                             <div className="flex flex-col gap-1 flex-1 min-w-0">
                                                 <MessageContent>
-                                                    <MessageResponse>{msg.content}</MessageResponse>
+                                                    <MessageResponse>{messageText}</MessageResponse>
                                                 </MessageContent>
                                                 {msg.id !== 'welcome' && (
                                                     <MessageActions>
                                                         <MessageAction
                                                             tooltip="Copy"
-                                                            onClick={() => handleCopyMessage(msg.content, msg.id)}
+                                                            onClick={() => handleCopyMessage(messageText, msg.id)}
                                                         >
                                                             {copiedMessageId === msg.id ? (
                                                                 <CheckIcon className="w-3.5 h-3.5 text-green-500" />
@@ -400,11 +413,12 @@ const AgentPanel: React.FC<AgentPanelProps> = ({
                                     )}
                                     {msg.role === 'user' && (
                                         <MessageContent className="bg-indigo-500 text-white rounded-2xl rounded-tr-sm px-4 py-3">
-                                            {msg.content}
+                                            {messageText}
                                         </MessageContent>
                                     )}
                                 </Message>
-                            ))}
+                                );
+                            })}
 
                             {/* Suggested Actions (show when only welcome message) */}
                             {messages.length === 1 && (
